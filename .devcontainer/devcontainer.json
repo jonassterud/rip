@@ -1,0 +1,28 @@
+{
+	"name": "DEV",
+	"image": "mcr.microsoft.com/devcontainers/base:jammy",
+	"features": {
+		"ghcr.io/devcontainers/features/rust:1": {}
+	},
+	"customizations": {
+		"vscode": {
+			"settings": {
+				"editor.tabSize": 4,
+                "editor.detectIndentation": false,
+                "editor.insertSpaces": true,
+                "files.insertFinalNewline": true,
+				"lldb.executable": "/usr/bin/lldb",
+                "files.watcherExclude": {
+                    "**/target/**": true
+                }
+			},
+			"extensions": [
+				"rust-lang.rust-analyzer",
+				"serayuzgur.crates",
+				"tamasfe.even-better-toml",
+				"mutantdino.resourcemonitor",
+				"vadimcn.vscode-lldb"
+			]
+		}
+	}
+}
