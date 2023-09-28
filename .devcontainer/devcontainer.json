@@ -6,7 +6,8 @@
 	},
 	"customizations": {
 		"vscode": {
-			"settings": {
+            "settings": {
+                "rust-analyzer.inlayHints.typeHints.enable": false,
 				"editor.tabSize": 4,
                 "editor.detectIndentation": false,
                 "editor.insertSpaces": true,
