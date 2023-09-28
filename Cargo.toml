@@ -1,0 +1,14 @@
+[workspace]
+members = ["crates/*"]
+default-members = ["crates/app"]
+resolver = "2"
+
+[workspace.package]
+version = "0.0.0"
+authors = ["Jonas Mathisrud Sterud <jonas.sterud@gmail.com>"]
+repository = "https://github.com/jonassterud/rip"
+license = "GPL-3.0"
+edition = "2021"
+rust-version = "1.72"
+
+[workspace.dependencies]
