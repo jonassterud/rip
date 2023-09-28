@@ -5,9 +5,13 @@ pub enum Error {
     #[error(transparent)]
     Poison(#[from] std::sync::PoisonError<()>),
     #[error(transparent)]
-    JoinError(#[from] tokio::task::JoinError),
+    Join(#[from] tokio::task::JoinError),
+    #[error(transparent)]
+    FromUtf8(#[from] std::string::FromUtf8Error),
     #[error("bencode error: {0}")]
     Bencode(String),
+    #[error("torrent error: {0}")]
+    Torrent(String),
     #[error("unknown error")]
     Unknown,
 }

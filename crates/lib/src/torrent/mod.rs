@@ -1,14 +1,16 @@
-mod parser;
+mod parse;
 
 use super::agent::traits::Download;
 use super::error::Error;
 use std::path::Path;
 
-pub struct Torrent {}
+pub struct Torrent {
+    pub announce: String,
+}
 
 impl Torrent {
     pub fn from_bytes(contents: &[u8]) -> Result<Self, Error> {
-        todo!()
+        Torrent::parse(contents)
     }
 }
 

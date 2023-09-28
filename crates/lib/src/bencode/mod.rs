@@ -1,5 +1,4 @@
 use super::error::Error;
-use core::num;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -7,7 +6,7 @@ use std::ops::Range;
 mod tests;
 
 /// A Bencoded value
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub enum Value {
     Integer(isize),
     ByteString(Vec<u8>),
@@ -19,6 +18,38 @@ impl Value {
     /// Parse Bencode from a slice of bytes.
     pub fn from_bytes(contents: &[u8]) -> Result<Self, Error> {
         Value::parse_any(contents, &mut 0)
+    }
+
+    /// Try to get `Value` as a integer.
+    pub fn try_as_integer(self) -> Result<isize, Error> {
+        match self {
+            Value::Integer(integer) => Ok(integer),
+            _ => Err(Error::Bencode("not a integer".into())),
+        }
+    }
+
+    /// Try to get `Value` as a byte string.
+    pub fn try_as_byte_string(self) -> Result<Vec<u8>, Error> {
+        match self {
+            Value::ByteString(byte_string) => Ok(byte_string),
+            _ => Err(Error::Bencode("not a byte string".into())),
+        }
+    }
+
+    /// Try to get `Value` as a list.
+    pub fn try_as_list(self) -> Result<Vec<Value>, Error> {
+        match self {
+            Value::List(list) => Ok(list),
+            _ => Err(Error::Bencode("not a list".into())),
+        }
+    }
+
+    /// Try to get `Value` as a dictionary.
+    pub fn try_as_dictionary(self) -> Result<BTreeMap<Vec<u8>, Value>, Error> {
+        match self {
+            Value::Dictionary(dictionary) => Ok(dictionary),
+            _ => Err(Error::Bencode("not a dictionary".into())),
+        }
     }
 
     /// Parse any data, starting at marker.
