@@ -8,3 +8,6 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+tokio = { workspace = true, features = [] }
+serde = { workspace = true, features = ["derive"] }
+thiserror = { version = "1.0", features = [] }

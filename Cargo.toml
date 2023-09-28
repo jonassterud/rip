@@ -12,3 +12,5 @@ edition = "2021"
 rust-version = "1.72"
 
 [workspace.dependencies]
+tokio = { version = "1.32" }
+serde = { version = "1.0" }

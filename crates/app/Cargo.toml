@@ -8,3 +8,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [dependencies]
+rip_lib = { path = "../lib", features = [] }
+tokio = { workspace = true, features = ["full"] }
+anyhow = { version = "1.0", features = [] }
+clap = { version = "4.4", features = ["derive"]}
