@@ -17,8 +17,8 @@ Here are some useful resources:
 
 Use tools such as [Rustfmt](https://github.com/rust-lang/rustfmt) and [Clippy](https://github.com/rust-lang/rust-clippy) to improve your code.  
 Commit messages should be structured like this: `<type>(<optional scope>): <description>`.  
-Where type is one of the following: `feat`, `fix`, `ci`, `docs` or `refactor`.  
-The optional scope can be one of the following: `lib`, `app`.  
+Where type is one of the following: `feat`, `fix`, `docs` or `refactor`.  
+The optional scope can be one of the following: `lib`, `app`, `ci`.  
 When mentioning files or folders in the description, type the name between the \`\` characters.
 
 Example commit message: ``refactor(lib): move `torrent.rs` into `parse` directory``
