@@ -6,6 +6,8 @@ pub enum Error {
     Poison(#[from] std::sync::PoisonError<()>),
     #[error(transparent)]
     JoinError(#[from] tokio::task::JoinError),
+    #[error("bencode error: {0}")]
+    Bencode(String),
     #[error("unknown error")]
     Unknown,
 }

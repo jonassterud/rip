@@ -8,15 +8,13 @@ use std::sync::{Arc, Mutex};
 use tokio::task::JoinSet;
 
 pub struct Agent {
-    files: Vec<Box<dyn Download<E = Error>>>,
+    files: Vec<Box<dyn Download<Error = Error>>>,
 }
 
 impl Agent {
     /// Create a new `Agent`.
     pub fn new() -> Result<Self, Error> {
-        Ok(Self {
-            files: Vec::new()
-        })
+        Ok(Self { files: Vec::new() })
     }
 
     /// Read and parse torrents from a list of file paths.
@@ -27,7 +25,7 @@ impl Agent {
             set.spawn(tokio::spawn(async move {
                 let contents = tokio::fs::read(path).await?;
                 let torrent = Torrent::from_bytes(&contents)?;
-                
+
                 Ok::<Torrent, Error>(torrent)
             }));
         }
