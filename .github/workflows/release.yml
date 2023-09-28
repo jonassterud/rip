@@ -7,6 +7,7 @@ on:
 jobs:
   release:
     name: release ${{ matrix.target }}
+    working-directory: ./crates/app
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
