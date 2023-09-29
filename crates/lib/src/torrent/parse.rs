@@ -5,10 +5,23 @@ use std::collections::BTreeMap;
 impl Torrent {
     pub fn parse(contents: &[u8]) -> Result<Self, Error> {
         let dictionary = Value::from_bytes(contents)?.try_as_dictionary()?;
-        let announce = String::from_utf8(get(&dictionary, "announce")?.try_as_byte_string()?)?;
         let info = get(&dictionary, "info")?.try_as_dictionary()?;
+        let announce = String::from_utf8(get(&dictionary, "announce")?.try_as_byte_string()?)?;
+        let announce_list = None;
+        let creation_date = None;
+        let comment = None;
+        let created_by = None;
+        let encoding = None;
 
-        Ok(Torrent { announce })
+        Ok(Torrent {
+            info: TorrentInfo::from_dictionary(info)?,
+            announce,
+            announce_list,
+            creation_date,
+            comment,
+            created_by,
+            encoding,
+        })
     }
 }
 

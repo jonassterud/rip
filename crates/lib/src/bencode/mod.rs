@@ -1,4 +1,5 @@
 use super::error::Error;
+use core::num;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -40,6 +41,14 @@ impl Value {
     pub fn try_as_list(self) -> Result<Vec<Value>, Error> {
         match self {
             Value::List(list) => Ok(list),
+            _ => Err(Error::Bencode("not a list".into())),
+        }
+    }
+
+    /// Try to get `Value` as a list of byte strings.
+    pub fn try_as_list_of_byte_strings(self) -> Result<Vec<Vec<u8>>, Error> {
+        match self {
+            Value::List(list) => list.into_iter().map(|v| v.try_as_byte_string()).collect(),
             _ => Err(Error::Bencode("not a list".into())),
         }
     }
