@@ -8,14 +8,15 @@ use super::error::Error;
 use info::TorrentInfo;
 use std::path::Path;
 
+#[derive(Debug)]
 pub struct Torrent {
-    pub info: TorrentInfo,
-    pub announce: String,
-    pub announce_list: Option<Vec<Vec<String>>>,
-    pub creation_date: Option<usize>,
-    pub comment: Option<String>,
-    pub created_by: Option<String>,
-    pub encoding: Option<String>,
+    info: TorrentInfo,
+    announce: String,
+    announce_list: Option<Vec<Vec<String>>>,
+    creation_date: Option<usize>,
+    comment: Option<String>,
+    created_by: Option<String>,
+    encoding: Option<String>,
 }
 
 impl Torrent {

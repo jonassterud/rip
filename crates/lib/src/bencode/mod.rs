@@ -1,5 +1,4 @@
 use super::error::Error;
-use core::num;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
@@ -15,14 +14,22 @@ pub enum Value {
     Dictionary(BTreeMap<Vec<u8>, Value>),
 }
 
+pub struct ValueParser<'a> {
+    data: &'a [u8],
+    i: usize,
+}
+
 impl Value {
     /// Parse Bencode from a slice of bytes.
     pub fn from_bytes(contents: &[u8]) -> Result<Self, Error> {
-        Value::parse_any(contents, &mut 0)
+        ValueParser {
+            data: contents,
+            i: 0,
+        }.parse()
     }
 
     /// Try to get `Value` as a integer.
-    pub fn try_as_integer(self) -> Result<isize, Error> {
+    pub fn as_integer(self) -> Result<isize, Error> {
         match self {
             Value::Integer(integer) => Ok(integer),
             _ => Err(Error::Bencode("not a integer".into())),
@@ -30,7 +37,7 @@ impl Value {
     }
 
     /// Try to get `Value` as a byte string.
-    pub fn try_as_byte_string(self) -> Result<Vec<u8>, Error> {
+    pub fn as_byte_string(self) -> Result<Vec<u8>, Error> {
         match self {
             Value::ByteString(byte_string) => Ok(byte_string),
             _ => Err(Error::Bencode("not a byte string".into())),
@@ -38,139 +45,131 @@ impl Value {
     }
 
     /// Try to get `Value` as a list.
-    pub fn try_as_list(self) -> Result<Vec<Value>, Error> {
+    pub fn as_list(self) -> Result<Vec<Value>, Error> {
         match self {
             Value::List(list) => Ok(list),
             _ => Err(Error::Bencode("not a list".into())),
         }
     }
 
-    /// Try to get `Value` as a list of byte strings.
-    pub fn try_as_list_of_byte_strings(self) -> Result<Vec<Vec<u8>>, Error> {
-        match self {
-            Value::List(list) => list.into_iter().map(|v| v.try_as_byte_string()).collect(),
-            _ => Err(Error::Bencode("not a list".into())),
-        }
-    }
-
     /// Try to get `Value` as a dictionary.
-    pub fn try_as_dictionary(self) -> Result<BTreeMap<Vec<u8>, Value>, Error> {
+    pub fn as_dictionary(self) -> Result<BTreeMap<Vec<u8>, Value>, Error> {
         match self {
             Value::Dictionary(dictionary) => Ok(dictionary),
             _ => Err(Error::Bencode("not a dictionary".into())),
         }
     }
 
-    /// Parse any data, starting at marker.
-    fn parse_any(data: &[u8], marker: &mut usize) -> Result<Self, Error> {
-        let prefix = data
-            .get(*marker)
-            .ok_or(Error::Bencode("missing prefix".into()))?;
+    /// Try to get `Value` as a list of byte strings.
+    pub fn as_list_of_byte_strings(self) -> Result<Vec<Vec<u8>>, Error> {
+        match self {
+            Value::List(list) => list.into_iter().map(|v| v.as_byte_string()).collect(),
+            _ => Err(Error::Bencode("not a list".into())),
+        }
+    }
+}
 
-        match prefix {
-            b'i' => Self::parse_integer(data, marker),
-            48..=57 => Self::parse_byte_string(data, marker),
-            b'l' => Self::parse_list(data, marker),
-            b'd' => Self::parse_dictionary(data, marker),
-            _ => Err(Error::Bencode("unknown prefix".into())),
+impl<'a> ValueParser<'a> {
+    /// Get current byte at index.
+    fn at(&self) -> Result<&u8, Error> {
+        self.data
+            .get(self.i)
+            .ok_or(Error::Bencode("empty".into()))
+    }
+
+    /// Skip n bytes.
+    fn skip(&mut self, n: usize) {
+        self.i += n;
+    }
+
+    /// Find index of byte from index.
+    fn find(&self, byte: u8) -> Result<usize, Error> {
+        for j in self.i..self.data.len() {
+            if self.data[j] == byte {
+                return Ok(j - self.i);
+            }
+        }
+
+        Err(Error::Bencode("not found".into()))
+    }
+
+    /// Take bytes in the range, relative to the index.
+    fn take(&mut self, range: Range<usize>) -> Result<&[u8], Error> {
+        match self.data.get(self.i + range.start..self.i + range.end) {
+            Some(out) => {
+                self.i += range.end;
+                Ok(out)
+            }
+            _ => Err(Error::Bencode("out of range".into())),
+        }
+
+    }
+
+    /// Parse any.
+    pub fn parse(&mut self) -> Result<Value, Error> {
+        match self.at()? {
+            b'i' => self.parse_integer(),
+            48..=57 => self.parse_byte_string(),
+            b'l' => self.parse_list(),
+            b'd' => self.parse_dictionary(),
+            _ => Err(Error::Bencode("unexpected byte".into())),
         }
     }
 
-    /// Parse integer, starting at marker.
-    fn parse_integer(data: &[u8], marker: &mut usize) -> Result<Self, Error> {
-        let number_range = Self::range_between(data, b'i', b'e', marker)?;
-        let number = data[number_range]
-            .iter()
+    /// Parse integer.
+    fn parse_integer(&mut self) -> Result<Value, Error> {
+        let end = self.find(b'e')?;
+        let val = self
+            .take(1..end)?.iter()
             .map(|b| *b as char)
-            .collect::<String>()
-            .parse()
-            .map_err(|_| Error::Bencode("failed parsing".into()))?;
+            .collect::<String>();
+        let val = val.parse::<isize>()
+            .map_err(|_| Error::Bencode("invalid integer".into()))?;
+        self.skip(1);
 
-        Ok(Value::Integer(number))
+        Ok(Value::Integer(val))
     }
 
-    /// Parse byte string, starting at marker.
-    fn parse_byte_string(data: &[u8], marker: &mut usize) -> Result<Self, Error> {
-        let number_range = Self::range_between(data, data[*marker], b':', marker)?;
-        let length = data[(number_range.start - 1)..number_range.end]
+    /// Parse byte string.
+    fn parse_byte_string(&mut self) -> Result<Value, Error> {
+        let end = self.find(b':')?;
+        let len = self
+            .take(0..end)?
             .iter()
             .map(|b| *b as char)
             .collect::<String>()
             .parse::<usize>()
-            .map_err(|_| Error::Bencode("failed parsing".into()))?;
-        let byte_string = &data[(number_range.end + 1)..(number_range.end + length + 1)];
-        *marker += length;
+            .map_err(|_| Error::Bencode("invalid length".into()))?;
+        let val = self.take(1..(len + 1))?.to_vec();
 
-        Ok(Value::ByteString(byte_string.to_vec()))
+        Ok(Value::ByteString(val))
     }
 
-    /// Parse list, starting at marker.
-    fn parse_list(data: &[u8], marker: &mut usize) -> Result<Self, Error> {
-        let mut list = Vec::new();
+    /// Parse list.
+    fn parse_list(&mut self) -> Result<Value, Error> {
+        let mut val = Vec::new();
 
-        *marker += 1;
-        loop {
-            if data[*marker] == b'e' {
-                *marker += 1;
-                return Ok(Value::List(list));
-            } else {
-                let next_value = Value::parse_any(data, marker)?;
-                list.push(next_value)
-            }
+        self.skip(1);
+        while *self.at()? != b'e' {
+            val.push(self.parse()?);
         }
+        self.skip(1);
+        
+        Ok(Value::List(val))
     }
 
-    /// Parse dictionary, starting at marker.
-    fn parse_dictionary(data: &[u8], marker: &mut usize) -> Result<Self, Error> {
-        let mut dictionary = BTreeMap::new();
-        let mut key = None;
+    /// Parse dictionary.
+    fn parse_dictionary(&mut self) -> Result<Value, Error> {
+        let mut val = BTreeMap::new();
 
-        *marker += 1;
-        loop {
-            if data[*marker] == b'e' {
-                *marker += 1;
-                return Ok(Value::Dictionary(dictionary));
-            } else {
-                let next_value = Value::parse_any(data, marker)?;
-                if key.is_none() {
-                    if let Value::ByteString(byte_string) = next_value {
-                        key = Some(byte_string);
-                    } else {
-                        return Err(Error::Bencode("expected key".into()));
-                    }
-                } else {
-                    dictionary.insert(key.take().unwrap(), next_value);
-                }
-            }
+        self.skip(1);
+        while *self.at()? != b'e' {
+            let key = self.parse_byte_string()?.as_byte_string()?;
+            let value = self.parse()?;
+            val.insert(key, value);
         }
-    }
+        self.skip(1);
 
-    /// Get `Range` for data between prefix and suffix.
-    fn range_between(
-        data: &[u8],
-        prefix: u8,
-        suffix: u8,
-        marker: &mut usize,
-    ) -> Result<Range<usize>, Error> {
-        let mut range = Range {
-            start: *marker,
-            end: *marker + 1,
-        };
-
-        loop {
-            let byte = data
-                .get(*marker)
-                .ok_or(Error::Bencode("unexpected end".into()))?;
-
-            if *byte == prefix {
-                range.start = *marker + 1;
-            } else if *byte == suffix {
-                range.end = *marker;
-                *marker += 1;
-                return Ok(range);
-            }
-
-            *marker += 1;
-        }
+        Ok(Value::Dictionary(val))
     }
 }
