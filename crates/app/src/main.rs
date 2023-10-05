@@ -1,7 +1,7 @@
 mod cli;
 
-use rip_lib::prelude::*;
 use cli::*;
+use rip_lib::prelude::*;
 
 #[tokio::main]
 async fn main() -> anyhow::Result<()> {

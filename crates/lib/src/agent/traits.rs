@@ -1,8 +1,8 @@
 use std::path::Path;
 
 pub trait Download {
-    type E;
+    type Error;
 
     /// Start downloading the file.
-    fn download(&self, out: &Path) -> Result<(), Self::E>;
+    fn download(&self, out: &Path) -> Result<(), Self::Error>;
 }
