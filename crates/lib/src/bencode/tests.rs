@@ -1,20 +1,6 @@
 use super::*;
 
 #[test]
-fn test_custom_struct() {
-    let mut parser = ValueParser {
-        data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        i: 0,
-    };
-
-    assert_eq!(parser.at().unwrap(), &1);
-    assert_eq!(parser.take(0..4).unwrap(), &[1, 2, 3, 4]);
-    assert_eq!(parser.find(5).unwrap(), 0);
-    assert_eq!(parser.find(10).unwrap(), 5);
-    assert_eq!(parser.take(1..2).unwrap(), &[6]);
-}
-
-#[test]
 fn decode_integer() {
     println!("{:?}", Value::from_bytes("i32eX".as_bytes()).unwrap());
 }

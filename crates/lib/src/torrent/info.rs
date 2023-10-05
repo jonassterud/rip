@@ -1,6 +1,5 @@
-use crate::bencode::Value;
 use crate::error::Error;
-use std::collections::BTreeMap;
+use crate::prelude::*;
 
 #[derive(Debug)]
 pub struct TorrentInfo {
@@ -20,19 +19,20 @@ pub struct File {
 }
 
 impl TorrentInfo {
-    pub fn from_dictionary(info: BTreeMap<Vec<u8>, Value>) -> Result<Self, Error> {
+    pub fn from_dictionary(info: Dictionary) -> Result<Self, Error> {
         let mut files = Vec::new();
-        let name = get(&info, "name")?.as_byte_string()?;
-        let piece_length = get(&info, "piece length")?.as_integer()? as usize;
-        let pieces = get(&info, "pieces")?.as_byte_string()?;
-        let private = get_opt(&info, "private").map(|v| v.as_integer().ok() != Some(0));
-        let is_single_file = !has(&info, "files");
+        let name = info.try_get_as::<ByteString>("name")?.0;
+        let piece_length = info.try_get_as::<Integer>("piece length")?.0 as usize;
+        let pieces = info.try_get_as::<ByteString>("pieces")?.0;
+        let private = info
+            .try_get_as::<Integer>("private")
+            .ok()
+            .map(|v| v != Integer(0));
+        let is_single_file = !info.has("files");
 
         if is_single_file {
-            let length = get(&info, "length")?.as_integer()? as usize;
-            let md5sum = get_opt(&info, "md5sum")
-                .map(|s| s.as_byte_string())
-                .transpose()?;
+            let length = info.try_get_as::<Integer>("length")?.0 as usize;
+            let md5sum = info.try_get_as::<ByteString>("md5sum").ok().map(|v| v.0);
 
             files.push(File {
                 length,
@@ -40,16 +40,21 @@ impl TorrentInfo {
                 md5sum,
             });
         } else {
-            let mut tmp = get(&info, "files")?
-                .as_list()?
+            let mut tmp = info
+                .try_get_as::<List>("files")?
+                .0
                 .into_iter()
                 .map(|v| {
-                    let d = v.as_dictionary()?;
-                    let length = get(&d, "length")?.as_integer()? as usize;
-                    let path = get(&d, "path")?.as_list_of_byte_strings()?;
-                    let md5sum = get_opt(&d, "md5sum")
-                        .map(|s| s.as_byte_string())
-                        .transpose()?;
+                    let d = v.try_as::<Dictionary>()?;
+                    let length = d.try_get_as::<Integer>("length")?.0 as usize;
+                    let path = d
+                        .try_get("path")?
+                        .clone()
+                        .as_list_of::<ByteString>()?
+                        .into_iter()
+                        .map(|v| v.0)
+                        .collect();
+                    let md5sum = d.try_get_as::<ByteString>("md5sum").ok().map(|v| v.0);
 
                     Ok::<File, Error>(File {
                         length,
@@ -71,19 +76,4 @@ impl TorrentInfo {
             is_single_file,
         })
     }
-}
-
-fn get(dictionary: &BTreeMap<Vec<u8>, Value>, k: &str) -> Result<Value, Error> {
-    Ok(dictionary
-        .get(k.as_bytes())
-        .ok_or_else(|| Error::Torrent(format!("missing key {k}")))?
-        .clone())
-}
-
-fn get_opt(dictionary: &BTreeMap<Vec<u8>, Value>, k: &str) -> Option<Value> {
-    dictionary.get(k.as_bytes()).cloned()
-}
-
-fn has(dictionary: &BTreeMap<Vec<u8>, Value>, k: &str) -> bool {
-    dictionary.contains_key(k.as_bytes())
 }

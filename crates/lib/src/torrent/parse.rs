@@ -1,12 +1,12 @@
 use super::*;
-use crate::bencode::Value;
+use crate::prelude::*;
 use std::collections::BTreeMap;
 
 impl Torrent {
     pub fn parse(contents: &[u8]) -> Result<Self, Error> {
-        let dictionary = Value::from_bytes(contents)?.as_dictionary()?;
-        let info = get(&dictionary, "info")?.as_dictionary()?;
-        let announce = String::from_utf8(get(&dictionary, "announce")?.as_byte_string()?)?;
+        let dictionary = Value::from_bytes(contents)?.try_as::<Dictionary>()?;
+        let info = dictionary.try_get_as::<Dictionary>("info")?;
+        let announce = String::from_utf8(dictionary.try_get_as::<ByteString>("announce")?.0)?;
         let announce_list = None;
         let creation_date = None;
         let comment = None;

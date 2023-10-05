@@ -9,19 +9,19 @@ pub struct TrackerResponse {
 
 impl TrackerResponse {
     pub fn from_bytes(contents: &[u8]) -> Result<Self, Error> {
-        let dict = Value::from_bytes(contents)?.as_dictionary()?;
+        let dict = Value::from_bytes(contents)?.try_as::<Dictionary>()?;
 
-        if let Some(failure_reason) = get_opt(&dict, "failure reason") {
-            return Err(Error::Tracker(String::from_utf8(
-                failure_reason.as_byte_string()?,
-            )?));
+        if let Ok(failure_reason) = dict.try_get_as::<ByteString>("failure reason") {
+            return Err(Error::Tracker(String::from_utf8(failure_reason.0)?));
         }
 
-        let interval = get(&dict, "interval")?.as_integer()? as usize;
-        let peers = get(&dict, "peers")?
-            .as_list_of_dictionaries()?
+        let interval = dict.try_get_as::<Integer>("interval")?.0 as usize;
+        let peers = dict
+            .try_get("peers")?
+            .clone()
+            .as_list_of::<Dictionary>()?
             .iter()
-            .map(Peer::from_dict)
+            .map(Peer::from_dictionary)
             .collect::<Result<Vec<Peer>, Error>>()?;
 
         Ok(Self { interval, peers })
