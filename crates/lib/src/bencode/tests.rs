@@ -2,9 +2,9 @@ use super::*;
 
 #[test]
 fn test_custom_struct() {
-    let mut parser = ValueParser{
+    let mut parser = ValueParser {
         data: &[1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
-        i: 0
+        i: 0,
     };
 
     assert_eq!(parser.at().unwrap(), &1);
@@ -26,7 +26,10 @@ fn decode_byte_string() {
 
 #[test]
 fn decode_list() {
-    println!("{:?}", Value::from_bytes("li32ei54e3:abc1:ee".as_bytes()).unwrap());
+    println!(
+        "{:?}",
+        Value::from_bytes("li32ei54e3:abc1:ee".as_bytes()).unwrap()
+    );
 }
 
 #[test]

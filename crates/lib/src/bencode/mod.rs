@@ -25,7 +25,8 @@ impl Value {
         ValueParser {
             data: contents,
             i: 0,
-        }.parse()
+        }
+        .parse()
     }
 
     /// Try to get `Value` as a integer.
@@ -67,14 +68,19 @@ impl Value {
             _ => Err(Error::Bencode("not a list".into())),
         }
     }
+
+    pub fn as_list_of_dictionaries(&self) -> Result<Vec<BTreeMap<Vec<u8>, Value>>, Error> {
+        match self {
+            Value::List(list) => list.iter().cloned().map(|v| v.as_dictionary()).collect(),
+            _ => Err(Error::Bencode("not a list".into())),
+        }
+    }
 }
 
 impl<'a> ValueParser<'a> {
     /// Get current byte at index.
     fn at(&self) -> Result<&u8, Error> {
-        self.data
-            .get(self.i)
-            .ok_or(Error::Bencode("empty".into()))
+        self.data.get(self.i).ok_or(Error::Bencode("empty".into()))
     }
 
     /// Skip n bytes.
@@ -102,7 +108,6 @@ impl<'a> ValueParser<'a> {
             }
             _ => Err(Error::Bencode("out of range".into())),
         }
-
     }
 
     /// Parse any.
@@ -120,10 +125,12 @@ impl<'a> ValueParser<'a> {
     fn parse_integer(&mut self) -> Result<Value, Error> {
         let end = self.find(b'e')?;
         let val = self
-            .take(1..end)?.iter()
+            .take(1..end)?
+            .iter()
             .map(|b| *b as char)
             .collect::<String>();
-        let val = val.parse::<isize>()
+        let val = val
+            .parse::<isize>()
             .map_err(|_| Error::Bencode("invalid integer".into()))?;
         self.skip(1);
 
@@ -154,7 +161,7 @@ impl<'a> ValueParser<'a> {
             val.push(self.parse()?);
         }
         self.skip(1);
-        
+
         Ok(Value::List(val))
     }
 
