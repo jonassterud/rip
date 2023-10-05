@@ -24,10 +24,3 @@ impl Torrent {
         })
     }
 }
-
-fn get(dictionary: &BTreeMap<Vec<u8>, Value>, k: &str) -> Result<Value, Error> {
-    Ok(dictionary
-        .get(k.as_bytes())
-        .ok_or_else(|| Error::Torrent(format!("missing key {k}")))?
-        .clone())
-}
