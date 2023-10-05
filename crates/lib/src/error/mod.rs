@@ -12,6 +12,8 @@ pub enum Error {
     Bencode(String),
     #[error("torrent error: {0}")]
     Torrent(String),
+    #[error("tracker error: {0}")]
+    Tracker(String),
     #[error("unknown error")]
     Unknown,
 }
