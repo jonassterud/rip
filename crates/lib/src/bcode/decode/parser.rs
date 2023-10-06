@@ -1,16 +1,15 @@
-use super::types::*;
 use crate::error::Error;
 use crate::prelude::*;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
-pub struct ValueParser<'a> {
+pub struct Decoder<'a> {
     data: &'a [u8],
     i: usize,
 }
 
-impl<'a> ValueParser<'a> {
-    /// Create a new `ValueParser`.
+impl<'a> Decoder<'a> {
+    /// Create a new `Decoder`.
     pub fn with(data: &'a [u8], i: usize) -> Self {
         Self { data, i }
     }
@@ -66,6 +65,9 @@ impl<'a> ValueParser<'a> {
             .iter()
             .map(|b| *b as char)
             .collect::<String>();
+        if val.starts_with("0") && val.len() > 1 {
+            return Err(Error::Bencode("invalid integer".to_string()));
+        }
         let val = val
             .parse::<isize>()
             .map_err(|_| Error::Bencode("invalid integer".into()))?;
@@ -120,7 +122,7 @@ impl<'a> ValueParser<'a> {
 
 #[test]
 fn test_value_parser() {
-    let mut parser = ValueParser::with(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0);
+    let mut parser = Decoder::with(&[1, 2, 3, 4, 5, 6, 7, 8, 9, 10], 0);
 
     assert_eq!(parser.at().unwrap(), &1);
     assert_eq!(parser.take(0..4).unwrap(), &[1, 2, 3, 4]);

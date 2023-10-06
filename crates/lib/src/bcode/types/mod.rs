@@ -1,6 +1,28 @@
 use crate::error::Error;
-use crate::prelude::*;
 use std::collections::BTreeMap;
+
+/// A Bencoded value
+#[derive(Debug, Clone, PartialEq, Eq, PartialOrd, Ord)]
+pub enum Value {
+    Integer(Integer),
+    ByteString(ByteString),
+    List(List),
+    Dictionary(Dictionary),
+}
+
+impl Value {
+    pub fn try_as<T: TryFrom<Value>>(self) -> Result<T, Error> {
+        T::try_from(self).map_err(|_| Error::Bencode("wrong type".to_string()))
+    }
+
+    pub fn as_list_of<T: TryFrom<Value>>(self) -> Result<Vec<T>, Error> {
+        self.try_as::<List>()?
+            .0
+            .into_iter()
+            .map(|v| v.try_as::<T>())
+            .collect::<Result<Vec<T>, Error>>()
+    }
+}
 
 #[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Integer(pub isize);
@@ -30,7 +52,7 @@ impl TryFrom<Value> for ByteString {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct List(pub Vec<Value>);
 
 impl TryFrom<Value> for List {
@@ -44,7 +66,7 @@ impl TryFrom<Value> for List {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq, PartialOrd, Eq, Ord)]
 pub struct Dictionary(pub BTreeMap<ByteString, Value>);
 
 impl TryFrom<Value> for Dictionary {
