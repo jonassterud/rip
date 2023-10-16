@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Tracker response.
+#[derive(Debug)]
 pub struct TrackerResponse {
     /// Number of seconds to wait between regular rerequests.
     interval: usize,

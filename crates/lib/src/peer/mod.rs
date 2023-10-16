@@ -2,6 +2,7 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Torrent peer.
+#[derive(Debug)]
 pub struct Peer {
     /// Peer ID.
     id: Vec<u8>,

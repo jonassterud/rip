@@ -1,8 +1,9 @@
-use crate::prelude::*;
 use crate::error::Error;
+use crate::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
 
 /// Tracker GET request.
+#[derive(Debug)]
 pub struct TrackerRequest {
     /// Torrent info hash.
     pub info_hash: Vec<u8>,
@@ -24,11 +25,11 @@ pub struct TrackerRequest {
 
 impl TrackerRequest {
     /// Create a [`TrackerRequest`] from a [`Torrent`] and its [`Agent`].
-    pub fn from_torrent(torrent: &Torrent, agent: &Agent) -> Result<Self, Error> {
-        let file = agent.get_file(torrent.get_hash())?;
+    pub fn with(tracker: &Tracker, agent: &Agent) -> Result<Self, Error> {
+        let file = agent.get_file(&tracker.hash)?;
 
         Ok(Self {
-            info_hash: torrent.get_hash().to_vec(),
+            info_hash: tracker.hash.clone(),
             peer_id: Alphanumeric.sample_string(&mut rand::thread_rng(), 20),
             ip: None,
             port: agent.get_port(),

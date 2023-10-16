@@ -2,11 +2,14 @@
 
 mod info;
 mod parse;
+mod tracker;
 
 use super::agent::traits::Download;
 use super::error::Error;
 use info::TorrentInfo;
 use std::path::Path;
+
+pub use tracker::Tracker;
 
 /// Torrent.
 #[derive(Debug)]
@@ -25,8 +28,11 @@ pub struct Torrent {
     pub created_by: Option<String>,
     /// Optional encoding type.
     pub encoding: Option<String>,
+
     /// SHA1 hash of info dictionary.
     info_hash: Vec<u8>,
+    /// Torrent tracker.
+    tracker: Tracker,
 }
 
 impl Torrent {
