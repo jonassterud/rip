@@ -3,18 +3,33 @@ pub mod traits;
 use self::traits::Download;
 use super::error::Error;
 use super::torrent::Torrent;
+use std::collections::HashMap;
 use std::path::{Path, PathBuf};
-use std::sync::{Arc, Mutex};
 use tokio::task::JoinSet;
 
+/// Agent, which handles download process.
 pub struct Agent {
-    files: Vec<Box<dyn Download<Error = Error>>>,
+    files: HashMap<Vec<u8>, Box<dyn Download<Error = Error>>>,
 }
 
 impl Agent {
     /// Create a new `Agent`.
     pub fn new() -> Result<Self, Error> {
-        Ok(Self { files: Vec::new() })
+        Ok(Self {
+            files: HashMap::new(),
+        })
+    }
+
+    /// Get file with `hash`.
+    pub fn get_file(&self, hash: &[u8]) -> Result<&Box<dyn Download<Error = Error>>, Error> {
+        self.files
+            .get(hash)
+            .ok_or_else(|| Error::Agent("file not found".to_string()))
+    }
+
+    /// Get IP port.
+    pub fn get_port(&self) -> u16 {
+        todo!()
     }
 
     /// Read and parse torrents from a list of file paths.
@@ -31,7 +46,9 @@ impl Agent {
         }
 
         while let Some(res) = set.join_next().await {
-            self.files.push(Box::new(res???));
+            let torrent = res???;
+            let hash = torrent.get_hash().to_owned();
+            self.files.insert(hash, Box::new(torrent));
         }
 
         Ok(())
@@ -39,7 +56,7 @@ impl Agent {
 
     /// Start a download process for all pending files.
     pub async fn download(&self, out: &Path) -> Result<(), Error> {
-        for file in &self.files {
+        for (_, file) in &self.files {
             file.download(out)?;
         }
 

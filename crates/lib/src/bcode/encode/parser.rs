@@ -1,6 +1,7 @@
 use crate::prelude::*;
 use std::collections::BTreeMap;
 
+/// (Bencode) Encoder.
 pub struct Encoder<'a> {
     value: &'a Value,
 }

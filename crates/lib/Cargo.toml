@@ -15,3 +15,5 @@ bep_23 = []
 [dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "fs"] }
 thiserror = { version = "1.0", features = [] }
+sha1_smol = { version = "1.0", features = [] }
+rand = { version = "0.8", features = [] }

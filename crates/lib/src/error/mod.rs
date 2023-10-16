@@ -14,6 +14,8 @@ pub enum Error {
     Torrent(String),
     #[error("tracker error: {0}")]
     Tracker(String),
+    #[error("agent error: {0}")]
+    Agent(String),
     #[error("unknown error")]
     Unknown,
 }

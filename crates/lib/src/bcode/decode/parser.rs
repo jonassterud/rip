@@ -3,6 +3,7 @@ use crate::prelude::*;
 use std::collections::BTreeMap;
 use std::ops::Range;
 
+/// (Bencode) Decoder
 pub struct Decoder<'a> {
     data: &'a [u8],
     i: usize,

@@ -1,24 +1,36 @@
 use crate::error::Error;
 use crate::prelude::*;
 
+/// Torrent info.
 #[derive(Debug)]
 pub struct TorrentInfo {
-    files: Vec<File>,
-    name: Vec<u8>,
-    piece_length: usize,
-    pieces: Vec<u8>,
-    private: Option<bool>,
-    is_single_file: bool,
+    /// List of files.
+    pub files: Vec<File>,
+    /// Suggested name to save the file (or directory if multipile files).
+    pub name: Vec<u8>,
+    /// Number of bytes in each piece the file is split into.
+    pub piece_length: usize,
+    /// All SHA1 hashes of pieces in order (i.e. multipiles of 20)
+    pub pieces: Vec<u8>,
+    /// Optional private flag.
+    pub private: Option<bool>,
+    /// Whether the [`Torrent`] is for a single or multipile files.
+    pub is_single_file: bool,
 }
 
+/// Torrent file.
 #[derive(Debug)]
 pub struct File {
+    /// Length in bytes.
     pub length: usize,
+    /// (In multi-file mode) Subdirectory names, where the last element is the file name.
     pub path: Vec<Vec<u8>>,
+    /// Optional MD5 sum.
     pub md5sum: Option<Vec<u8>>,
 }
 
 impl TorrentInfo {
+    /// Create [`TorrentInfo`] from bencoded dictionary.
     pub fn from_dictionary(info: Dictionary) -> Result<Self, Error> {
         let mut files = Vec::new();
         let name = info.try_get_as::<ByteString>("name")?.0;
