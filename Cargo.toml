@@ -13,4 +13,6 @@ rust-version = "1.72"
 
 [workspace.dependencies]
 tokio = { version = "1.32" }
+futures = { version = "0.3" }
 serde = { version = "1.0" }
+async-trait = { version = "0.1" }

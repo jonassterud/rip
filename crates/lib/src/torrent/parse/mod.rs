@@ -16,7 +16,6 @@ impl Torrent {
             .digest()
             .bytes()
             .to_vec();
-        let tracker = Tracker::with(&info_hash);
 
         Ok(Torrent {
             info: TorrentInfo::from_dictionary(info)?,
@@ -28,7 +27,6 @@ impl Torrent {
             encoding,
 
             info_hash,
-            tracker,
         })
     }
 }

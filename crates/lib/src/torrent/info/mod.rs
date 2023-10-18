@@ -2,7 +2,7 @@ use crate::error::Error;
 use crate::prelude::*;
 
 /// Torrent info.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct TorrentInfo {
     /// List of files.
     pub files: Vec<File>,
@@ -19,7 +19,7 @@ pub struct TorrentInfo {
 }
 
 /// Torrent file.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct File {
     /// Length in bytes.
     pub length: usize,

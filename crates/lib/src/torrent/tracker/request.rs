@@ -1,5 +1,6 @@
-use crate::error::Error;
+use super::TrackerResponse;
 use crate::prelude::*;
+use crate::{error::Error, prelude::traits::Download};
 use rand::distributions::{Alphanumeric, DistString};
 
 /// Tracker GET request.
@@ -25,11 +26,11 @@ pub struct TrackerRequest {
 
 impl TrackerRequest {
     /// Create a [`TrackerRequest`] from a [`Torrent`] and its [`Agent`].
-    pub fn with(tracker: &Tracker, agent: &Agent) -> Result<Self, Error> {
-        let file = agent.get_file(&tracker.hash)?;
+    pub fn with(torrent: &Torrent, agent: &Agent) -> Result<Self, Error> {
+        let file = agent.get_file(&torrent.get_hash())?;
 
         Ok(Self {
-            info_hash: tracker.hash.clone(),
+            info_hash: torrent.get_hash().to_vec(),
             peer_id: Alphanumeric.sample_string(&mut rand::thread_rng(), 20),
             ip: None,
             port: agent.get_port(),
@@ -40,8 +41,9 @@ impl TrackerRequest {
         })
     }
 
-    /// Get [`TrackerRequest`] as URL parameters.
-    pub fn as_url_params(&self) -> String {
+    /// Send [`TrackerRequest`] and wait for [`TrackerResponse`].
+    pub async fn send(&self) -> Result<TrackerResponse, Error> {
+        println!("{:?}", self);
         todo!()
     }
 }

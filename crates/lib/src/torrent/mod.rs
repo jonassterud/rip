@@ -6,13 +6,17 @@ mod tracker;
 
 use super::agent::traits::Download;
 use super::error::Error;
+use crate::prelude::*;
+use async_trait::async_trait;
+use std::future::Future;
+use std::pin::Pin;
 use info::TorrentInfo;
 use std::path::Path;
 
 pub use tracker::Tracker;
 
 /// Torrent.
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct Torrent {
     /// Torrent info.
     pub info: TorrentInfo,
@@ -31,8 +35,6 @@ pub struct Torrent {
 
     /// SHA1 hash of info dictionary.
     info_hash: Vec<u8>,
-    /// Torrent tracker.
-    tracker: Tracker,
 }
 
 impl Torrent {
@@ -50,19 +52,34 @@ impl Torrent {
 impl Download for Torrent {
     type Error = Error;
 
-    fn download(&self, out: &Path) -> Result<(), Self::Error> {
-        todo!()
+    fn initiate(
+        &self,
+        agent: &Agent,
+        out: &Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>> {
+        
+        let tracker_request = Tracker::create_request(&self, agent);
+        Box::pin(async move {
+            let tracker_response = tracker_request?.send().await?;
+            println!("{:?}", tracker_response);
+            
+            Ok(())
+        
+        })
     }
 
     fn get_uploaded(&self) -> usize {
-        todo!()
+        0
+        //todo!()
     }
 
     fn get_downloaded(&self) -> usize {
-        todo!()
+        0
+        //todo!()
     }
 
     fn get_left(&self) -> usize {
-        todo!()
+        99999999
+        //todo!()
     }
 }

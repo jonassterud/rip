@@ -4,12 +4,17 @@ use self::traits::Download;
 use super::error::Error;
 use super::torrent::Torrent;
 use std::collections::HashMap;
+use std::future::Future;
+use futures::future::try_join_all;
+use futures::stream::FuturesUnordered;
 use std::path::{Path, PathBuf};
+use std::pin::Pin;
 use tokio::task::JoinSet;
 
 /// Agent, which handles download process.
 pub struct Agent {
     files: HashMap<Vec<u8>, Box<dyn Download<Error = Error>>>,
+    futures: FuturesUnordered<Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
 }
 
 impl Agent {
@@ -17,6 +22,7 @@ impl Agent {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
             files: HashMap::new(),
+            futures: FuturesUnordered::new(),
         })
     }
 
@@ -29,7 +35,8 @@ impl Agent {
 
     /// Get IP port.
     pub fn get_port(&self) -> u16 {
-        todo!()
+        6881
+        //todo!()
     }
 
     /// Read and parse torrents from a list of file paths.
@@ -55,10 +62,12 @@ impl Agent {
     }
 
     /// Start a download process for all pending files.
-    pub async fn download(&self, out: &Path) -> Result<(), Error> {
+    pub async fn download(self, out: &Path) -> Result<(), Error> {
         for (_, file) in &self.files {
-            file.download(out)?;
+            self.futures.push(Box::pin(file.initiate(&self, out)));
         }
+
+        try_join_all(self.futures.into_iter()).await?;
 
         Ok(())
     }

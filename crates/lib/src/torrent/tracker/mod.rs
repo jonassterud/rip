@@ -1,23 +1,18 @@
 mod request;
 mod response;
 
-use crate::prelude::*;
 use crate::error::Error;
+use crate::prelude::*;
 use request::TrackerRequest;
 use response::TrackerResponse;
 
-
-
 /// A torrent tracker.
 #[derive(Debug)]
-pub struct Tracker {
-    hash: Vec<u8>,
-    request: Option<TrackerRequest>,
-    response: Option<TrackerResponse>
-}
+pub struct Tracker {}
 
 impl Tracker {
-    pub fn with(hash: &[u8]) -> Self {
-        todo!()
+    /// Create a [`TrackerRequest`] for a `torrent` and its `agent`.
+    pub fn create_request(torrent: &Torrent, agent: &Agent) -> Result<TrackerRequest, Error> {
+        TrackerRequest::with(torrent, agent)
     }
 }
