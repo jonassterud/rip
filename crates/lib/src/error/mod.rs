@@ -8,6 +8,8 @@ pub enum Error {
     Join(#[from] tokio::task::JoinError),
     #[error(transparent)]
     FromUtf8(#[from] std::string::FromUtf8Error),
+    #[error(transparent)]
+    Reqwest(#[from] reqwest::Error),
     #[error("bencode error: {0}")]
     Bencode(String),
     #[error("torrent error: {0}")]

@@ -1,11 +1,13 @@
 use super::TrackerResponse;
 use crate::prelude::*;
-use crate::{error::Error, prelude::traits::Download};
+use crate::error::Error;
 use rand::distributions::{Alphanumeric, DistString};
 
 /// Tracker GET request.
 #[derive(Debug)]
 pub struct TrackerRequest {
+    /// Tracker URL.
+    pub announce: String,
     /// Torrent info hash.
     pub info_hash: Vec<u8>,
     /// Random peer id.
@@ -30,6 +32,7 @@ impl TrackerRequest {
         let file = agent.get_file(&torrent.get_hash())?;
 
         Ok(Self {
+            announce: torrent.announce.clone(),
             info_hash: torrent.get_hash().to_vec(),
             peer_id: Alphanumeric.sample_string(&mut rand::thread_rng(), 20),
             ip: None,
@@ -43,7 +46,20 @@ impl TrackerRequest {
 
     /// Send [`TrackerRequest`] and wait for [`TrackerResponse`].
     pub async fn send(&self) -> Result<TrackerResponse, Error> {
-        println!("{:?}", self);
-        todo!()
+        let final_url = format!(
+            "{}?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}",
+            self.announce,
+            urlencoding::encode_binary(&self.info_hash),
+            urlencoding::encode(&self.peer_id),
+            urlencoding::encode(&self.port.to_string()),
+            urlencoding::encode(&self.uploaded.to_string()),
+            urlencoding::encode(&self.downloaded.to_string()),
+            urlencoding::encode(&self.left.to_string()),
+            //urlencoding::encode(self.event.as_ref().unwrap_or(&"".to_string())),
+        );
+        println!("{:?}", final_url);
+        let bytes = reqwest::get(final_url).await?.bytes().await?.to_vec();
+
+        TrackerResponse::from_bytes(&bytes)
     }
 }

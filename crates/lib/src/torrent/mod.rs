@@ -7,7 +7,6 @@ mod tracker;
 use super::agent::traits::Download;
 use super::error::Error;
 use crate::prelude::*;
-use async_trait::async_trait;
 use std::future::Future;
 use std::pin::Pin;
 use info::TorrentInfo;
@@ -61,8 +60,8 @@ impl Download for Torrent {
         let tracker_request = Tracker::create_request(&self, agent);
         Box::pin(async move {
             let tracker_response = tracker_request?.send().await?;
-            println!("{:?}", tracker_response);
-            
+            todo!("continue...");
+
             Ok(())
         
         })

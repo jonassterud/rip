@@ -104,7 +104,7 @@ impl Dictionary {
         let opt_value = self.0.get(&ByteString(key.as_bytes().to_vec()));
         let res_value = opt_value.ok_or(Error::Bencode(format!("missing key {key:?}")))?;
         let res_value = res_value.clone();
-        let out_value = T::try_from(res_value).map_err(|_| Error::Bencode("".to_string()))?;
+        let out_value = T::try_from(res_value).map_err(|_| Error::Bencode("invalid type".to_string()))?;
 
         Ok(out_value)
     }

@@ -9,7 +9,7 @@ pub struct Peer {
     /// IP address.
     ip: Vec<u8>,
     /// IP port.
-    port: Vec<u8>,
+    port: u16,
 }
 
 impl Peer {
@@ -17,7 +17,7 @@ impl Peer {
     pub fn from_dictionary(dictionary: &Dictionary) -> Result<Self, Error> {
         let id = dictionary.try_get_as::<ByteString>("peer id")?.0;
         let ip = dictionary.try_get_as::<ByteString>("ip")?.0;
-        let port = dictionary.try_get_as::<ByteString>("port")?.0;
+        let port = dictionary.try_get_as::<Integer>("port")?.0 as u16;
 
         Ok(Self { id, ip, port })
     }
