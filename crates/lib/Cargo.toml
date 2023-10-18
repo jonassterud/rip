@@ -7,6 +7,16 @@ license.workspace = true
 edition.workspace = true
 rust-version.workspace = true
 
+[features]
+default = ["bep_23"]
+bep_15 = []
+bep_23 = []
+
 [dependencies]
 tokio = { workspace = true, features = ["rt-multi-thread", "macros", "sync", "fs"] }
+futures = { workspace = true, features = [] }
+reqwest = { workspace = true, features = [] }
 thiserror = { version = "1.0", features = [] }
+sha1_smol = { version = "1.0", features = [] }
+rand = { version = "0.8", features = [] }
+urlencoding = { version = "2.1", features = [] }

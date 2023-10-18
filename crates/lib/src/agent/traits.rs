@@ -1,8 +1,24 @@
-use std::path::Path;
+use crate::prelude::*;
+use std::{future::Future, path::Path};
+use std::pin::Pin;
 
+/// "Downloadable" trait.
 pub trait Download {
     type Error;
 
-    /// Start downloading the file.
-    fn download(&self, out: &Path) -> Result<(), Self::Error>;
+    /// Get download future.
+    fn initiate<'a>(
+        &'a self,
+        agent: &'a Agent,
+        out: &'a Path,
+    ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>>;
+
+    /// Get total amount uploaded.
+    fn get_uploaded(&self) -> usize;
+
+    /// Get total amount downloaded.
+    fn get_downloaded(&self) -> usize;
+
+    /// Get total amount left.
+    fn get_left(&self) -> usize;
 }

@@ -1,7 +1,7 @@
 use rip_lib::prelude::*;
 
 #[test]
-fn test_parse_torrent() {
+fn test_torrent_parse() {
     let path = std::env::current_dir()
         .unwrap()
         .join("./tests/torrents/ubuntu-23.04-desktop-amd64.iso.torrent");
