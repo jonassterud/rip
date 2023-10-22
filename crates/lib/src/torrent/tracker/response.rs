@@ -16,7 +16,11 @@ impl TrackerResponse {
         let dict = decode(contents)?.try_as::<Dictionary>()?;
 
         if let Ok(failure_reason) = dict.try_get_as::<ByteString>("failure reason") {
-            return Err(Error::Tracker(String::from_utf8(failure_reason.0)?));
+            let failure_reason = String::from_utf8(failure_reason.0)?;
+
+            return Err(Error::Tracker(format!(
+                "request failed with reason: {failure_reason}"
+            )));
         }
 
         let interval = dict.try_get_as::<Integer>("interval")?.0 as usize;

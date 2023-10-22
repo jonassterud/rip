@@ -21,7 +21,7 @@ fn bcode_byte_string() {
 #[test]
 fn bcode_list() {
     let v1 = Integer::from(-32_isize);
-    let v2 = ByteString::from(b"3:abc".to_vec());
+    let v2 = ByteString::from(b"abc".to_vec());
     let list: Vec<Value> = vec![v1.into(), v2.into()];
 
     let encoded = encode::<List>(&list);

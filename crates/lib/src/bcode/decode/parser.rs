@@ -17,7 +17,9 @@ impl<'a> Decoder<'a> {
 
     /// Get current byte at index.
     fn at(&self) -> Result<&u8, Error> {
-        self.data.get(self.i).ok_or(Error::Bencode("empty".into()))
+        self.data
+            .get(self.i)
+            .ok_or(Error::Bencode(format!("slice is empty")))
     }
 
     /// Skip n bytes.
@@ -33,7 +35,7 @@ impl<'a> Decoder<'a> {
             }
         }
 
-        Err(Error::Bencode("not found".into()))
+        Err(Error::Bencode(format!("byte ({byte}) not found")))
     }
 
     /// Take bytes in the range, relative to the index.
@@ -43,18 +45,20 @@ impl<'a> Decoder<'a> {
                 self.i += range.end;
                 Ok(out)
             }
-            _ => Err(Error::Bencode("out of range".into())),
+            _ => Err(Error::Bencode(format!("out of range"))),
         }
     }
 
     /// Parse any.
     pub fn parse(&mut self) -> Result<Value, Error> {
-        match self.at()? {
+        let byte = *self.at()?;
+
+        match byte {
             b'i' => Ok(Value::Integer(self.parse_integer()?)),
             48..=57 => Ok(Value::ByteString(self.parse_byte_string()?)),
             b'l' => Ok(Value::List(self.parse_list()?)),
             b'd' => Ok(Value::Dictionary(self.parse_dictionary()?)),
-            _ => Err(Error::Bencode("unexpected byte".into())),
+            _ => Err(Error::Bencode(format!("unexpected byte ({byte})"))),
         }
     }
 
@@ -67,11 +71,13 @@ impl<'a> Decoder<'a> {
             .map(|b| *b as char)
             .collect::<String>();
         if val.starts_with("0") && val.len() > 1 {
-            return Err(Error::Bencode("invalid integer".to_string()));
+            return Err(Error::Bencode(format!(
+                "invalid integer (stopped at \"{val}\")"
+            )));
         }
         let val = val
             .parse::<isize>()
-            .map_err(|_| Error::Bencode("invalid integer".into()))?;
+            .map_err(|_| Error::Bencode(format!("invalid integer (stopped at \"{val}\"")))?;
         self.skip(1);
 
         Ok(Integer(val))
@@ -84,9 +90,12 @@ impl<'a> Decoder<'a> {
             .take(0..end)?
             .iter()
             .map(|b| *b as char)
-            .collect::<String>()
-            .parse::<usize>()
-            .map_err(|_| Error::Bencode("invalid length".into()))?;
+            .collect::<String>();
+        let len = len.parse::<usize>().map_err(|_| {
+            Error::Bencode(format!(
+                "failed parsing length of byte string (stopped at \"{len}\"",
+            ))
+        })?;
         let val = self.take(1..(len + 1))?.to_vec();
 
         Ok(ByteString(val))

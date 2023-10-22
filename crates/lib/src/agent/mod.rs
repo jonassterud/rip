@@ -30,7 +30,7 @@ impl Agent {
     pub fn get_file(&self, hash: &[u8]) -> Result<&Box<dyn Download<Error = Error>>, Error> {
         self.files
             .get(hash)
-            .ok_or_else(|| Error::Agent("file not found".to_string()))
+            .ok_or_else(|| Error::Agent(format!("file not found")))
     }
 
     /// Get IP port.

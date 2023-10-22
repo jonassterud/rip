@@ -16,12 +16,12 @@ pub enum Value {
 
 impl Value {
     /// Try getting bencoded value as type `T`.
-    pub fn try_as<T: TryFrom<Value>>(self) -> Result<T, Error> {
-        T::try_from(self).map_err(|_| Error::Bencode("wrong type".to_string()))
+    pub fn try_as<T: TryFrom<Value, Error = Error>>(self) -> Result<T, Error> {
+        T::try_from(self)
     }
 
     /// Try getting bencoded value as list of type `T`.
-    pub fn as_list_of<T: TryFrom<Value>>(self) -> Result<Vec<T>, Error> {
+    pub fn as_list_of<T: TryFrom<Value, Error = Error>>(self) -> Result<Vec<T>, Error> {
         self.try_as::<List>()?
             .0
             .into_iter()
@@ -40,7 +40,7 @@ impl TryFrom<Value> for Integer {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::Integer(out) => Ok(out),
-            _ => Err(Error::Bencode("not a integer".to_string())),
+            _ => Err(Error::Bencode(format!("not a integer ({value:?})"))),
         }
     }
 }
@@ -73,7 +73,7 @@ impl TryFrom<Value> for ByteString {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::ByteString(out) => Ok(out),
-            _ => Err(Error::Bencode("not a byte string".to_string())),
+            _ => Err(Error::Bencode(format!("not a byte string ({value:?})"))),
         }
     }
 }
@@ -100,7 +100,7 @@ impl TryFrom<Value> for List {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::List(out) => Ok(out),
-            _ => Err(Error::Bencode("not a list".to_string())),
+            _ => Err(Error::Bencode(format!("not a list ({value:?})"))),
         }
     }
 }
@@ -131,7 +131,7 @@ impl TryFrom<Value> for Dictionary {
     fn try_from(value: Value) -> Result<Self, Self::Error> {
         match value {
             Value::Dictionary(out) => Ok(out),
-            _ => Err(Error::Bencode("not a dictionary".to_string())),
+            _ => Err(Error::Bencode(format!("not a dictionary ({value:?})"))),
         }
     }
 }
@@ -168,7 +168,7 @@ impl Dictionary {
         let res_value = opt_value.ok_or(Error::Bencode(format!("missing key {key:?}")))?;
         let res_value = res_value.clone();
         let out_value =
-            T::try_from(res_value).map_err(|_| Error::Bencode("invalid type".to_string()))?;
+            T::try_from(res_value).map_err(|_| Error::Bencode(format!("invalid type")))?;
 
         Ok(out_value)
     }
