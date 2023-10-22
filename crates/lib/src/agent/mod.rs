@@ -46,7 +46,7 @@ impl Agent {
         for path in paths {
             set.spawn(tokio::spawn(async move {
                 let contents = tokio::fs::read(path).await?;
-                let torrent = Torrent::from_bytes(&contents)?;
+                let torrent = Torrent::from_bcode(&contents)?;
 
                 Ok::<Torrent, Error>(torrent)
             }));

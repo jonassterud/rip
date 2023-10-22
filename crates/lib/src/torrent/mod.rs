@@ -34,16 +34,21 @@ pub struct Torrent {
 
     /// SHA1 hash of info dictionary.
     info_hash: Vec<u8>,
+    /// Download buffer.
+    buffer: Vec<u8>,
     /// Total amount uploaded.
-    uploaded: usize,
-    /// Total amount downloaded.
-    downloaded: usize,
+    _uploaded: usize,
 }
 
 impl Torrent {
-    /// Create [`Torrent`] from bencoded bytes.
-    pub fn from_bytes(contents: &[u8]) -> Result<Self, Error> {
+    /// Create [`Torrent`] from Bencoded bytes.
+    pub fn from_bcode(contents: &[u8]) -> Result<Self, Error> {
         Torrent::parse(contents)
+    }
+
+    /// Read a pending [`Torrent`] download process stored on disk.
+    pub fn from_disk() -> Result<Self, Error> {
+        todo!()
     }
 
     /// Get `info_hash`.
@@ -70,17 +75,22 @@ impl Download for Torrent {
     }
 
     fn get_uploaded(&self) -> usize {
-        0
-        //todo!()
+        self._uploaded
     }
 
     fn get_downloaded(&self) -> usize {
-        0
-        //todo!()
+        self.buffer.len()
     }
 
     fn get_left(&self) -> usize {
-        99999999
-        //todo!()
+        // TODO:
+        // From BEP-03:
+        // "Note that this can't be computed from downloaded
+        // and the file length since it might be a resume, and
+        // there's a chance that some of the downloaded data failed
+        // an integrity check and had to be re-downloaded."
+
+        // TODO: I think this is right (minus "TODO" above)
+        (self.info.piece_length * (self.info.pieces.len() / 20)) - self.get_downloaded()
     }
 }

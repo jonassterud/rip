@@ -27,8 +27,8 @@ impl Torrent {
             encoding,
 
             info_hash,
-            uploaded: 0,
-            downloaded: 0,
+            buffer: Vec::new(),
+            _uploaded: 0,
         })
     }
 }

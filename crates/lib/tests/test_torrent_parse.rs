@@ -6,5 +6,5 @@ fn test_torrent_parse() {
         .unwrap()
         .join("./tests/torrents/ubuntu-23.04-desktop-amd64.iso.torrent");
     let contents = std::fs::read(path).unwrap();
-    let torrent = Torrent::from_bytes(&contents).unwrap();
+    let torrent = Torrent::from_bcode(&contents).unwrap();
 }
