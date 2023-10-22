@@ -1,6 +1,6 @@
 use crate::prelude::*;
-use std::{future::Future, path::Path};
 use std::pin::Pin;
+use std::{future::Future, path::Path};
 
 /// "Downloadable" trait.
 pub trait Download {

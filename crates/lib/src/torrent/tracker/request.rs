@@ -1,6 +1,6 @@
 use super::TrackerResponse;
-use crate::prelude::*;
 use crate::error::Error;
+use crate::prelude::*;
 use rand::distributions::{Alphanumeric, DistString};
 
 /// Tracker GET request.

@@ -12,7 +12,7 @@ impl Torrent {
         let comment = None;
         let created_by = None;
         let encoding = None;
-        let info_hash = sha1_smol::Sha1::from(encode(&Value::Dictionary(info.clone())))
+        let info_hash = sha1_smol::Sha1::from(encode::<Dictionary>(&info))
             .digest()
             .bytes()
             .to_vec();
@@ -27,6 +27,8 @@ impl Torrent {
             encoding,
 
             info_hash,
+            uploaded: 0,
+            downloaded: 0,
         })
     }
 }
