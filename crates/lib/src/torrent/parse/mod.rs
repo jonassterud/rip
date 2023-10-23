@@ -18,7 +18,7 @@ impl Torrent {
             .to_vec();
 
         Ok(Torrent {
-            info: TorrentInfo::from_dictionary(info)?,
+            info: TorrentInfo::from_bcode(info)?,
             announce,
             announce_list,
             creation_date,

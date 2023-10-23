@@ -60,6 +60,6 @@ impl TrackerRequest {
         println!("{:?}", final_url);
         let bytes = reqwest::get(final_url).await?.bytes().await?.to_vec();
 
-        TrackerResponse::from_bytes(&bytes)
+        TrackerResponse::from_bcode(&bytes)
     }
 }

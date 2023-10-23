@@ -31,7 +31,7 @@ pub struct File {
 
 impl TorrentInfo {
     /// Create [`TorrentInfo`] from bencoded dictionary.
-    pub fn from_dictionary(info: Dictionary) -> Result<Self, Error> {
+    pub fn from_bcode(info: Dictionary) -> Result<Self, Error> {
         let mut files = Vec::new();
         let name = info.try_get_as::<ByteString>("name")?.0;
         let piece_length = info.try_get_as::<Integer>("piece length")?.0 as usize;
