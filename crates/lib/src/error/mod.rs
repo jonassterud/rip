@@ -1,3 +1,6 @@
+use std::error;
+
+use crate::prelude::*;
 // TODO: Add backtrace after this is merged: https://github.com/rust-lang/rust/issues/99301
 
 #[derive(thiserror::Error, Debug)]
@@ -11,6 +14,9 @@ pub enum Error {
     /// Tracker error.
     #[error("tracker error: {0}")]
     Tracker(String),
+    /// Peer error.
+    #[error("peer error: {0}")]
+    Peer(String),
     /// Agent error.
     #[error("agent error: {0}")]
     Agent(String),
@@ -46,5 +52,17 @@ pub enum Error {
     _Reqwest {
         #[from]
         source: reqwest::Error,
+    },
+    /// [`std::sync::mpsc::SendError`]
+    #[error("sending/receiving a message failed: {source:?}")]
+    _StdSend {
+        #[from]
+        source: std::sync::mpsc::SendError<PeerMessage>,
+    },
+    /// [`tokio::sync::mpsc::error::SendError`]
+    #[error("sending/receiving a message failed: {source:?}")]
+    _TokioSend {
+        #[from]
+        source: tokio::sync::mpsc::error::SendError<PeerMessage>,
     },
 }

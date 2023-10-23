@@ -29,7 +29,7 @@ impl TrackerResponse {
             .clone()
             .as_list_of::<Dictionary>()?
             .iter()
-            .map(Peer::from_dictionary)
+            .map(Peer::from_bcode)
             .collect::<Result<Vec<Peer>, Error>>()?;
 
         Ok(Self { interval, peers })
