@@ -1,6 +1,6 @@
 use crate::{error::Error, helpers};
 
-#[derive(Debug)]
+#[derive(Debug, PartialEq, Eq)]
 #[repr(u8)]
 pub enum PeerMessage {
     Choke,
@@ -54,6 +54,7 @@ impl From<u8> for PeerMessage {
         }
     }
 }
+
 impl PeerMessage {
     /// Get inner message (if any) as bytes.
     fn message_as_bytes(&self) -> Vec<u8> {
@@ -77,21 +78,25 @@ impl PeerMessage {
     }
 
     pub fn as_bytes(&self) -> Vec<u8> {
-        let mut out = Vec::new();
+        let mut out: Vec<u8> = Vec::new();
+        let id = self.into();
+        let mut payload = self.message_as_bytes();
+        let mut length = (1 + payload.len() as u32).to_be_bytes().to_vec();
 
-        out.push(self.into());
-        out.append(&mut self.message_as_bytes());
+        out.append(&mut length);
+        out.push(id);
+        out.append(&mut payload);
 
         out
     }
 
     pub fn try_from_bytes(contents: &[u8]) -> Result<Self, Error> {
         let variant = contents
-            .get(0)
+            .get(4)
             .ok_or_else(|| Error::Peer(format!("missing message variant")))?;
-        let p1 = helpers::try_from_slice(&contents, 1, &u32::from_be_bytes);
-        let p2 = helpers::try_from_slice(&contents, 4, &u32::from_be_bytes);
-        let p3 = helpers::try_from_slice(&contents, 8, &u32::from_be_bytes);
+        let p1 = helpers::try_from_slice(&contents, 5, &u32::from_be_bytes);
+        let p2 = helpers::try_from_slice(&contents, 9, &u32::from_be_bytes);
+        let p3 = helpers::try_from_slice(&contents, 13, &u32::from_be_bytes);
 
         match (*variant).into() {
             PeerMessage::Choke => Ok(PeerMessage::Choke),
@@ -99,7 +104,7 @@ impl PeerMessage {
             PeerMessage::Interested => Ok(PeerMessage::Interested),
             PeerMessage::NotInterested => Ok(PeerMessage::NotInterested),
             PeerMessage::Have(_) => Ok(PeerMessage::Have(p1?)),
-            PeerMessage::Bitfield(_) => Ok(PeerMessage::Bitfield(contents[1..].to_vec())),
+            PeerMessage::Bitfield(_) => Ok(PeerMessage::Bitfield(contents[5..].to_vec())),
             PeerMessage::Request(_, _, _) => Ok(PeerMessage::Request(p1?, p2?, p3?)),
             PeerMessage::Piece(_, _, _) => Ok(PeerMessage::Piece(p1?, p2?, p3?)),
             PeerMessage::Cancel(_, _, _) => Ok(PeerMessage::Cancel(p1?, p2?, p3?)),
