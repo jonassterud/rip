@@ -1,6 +1,6 @@
 use crate::error::Error;
 
-/// Tries to transform a slice of `N` elements into some value `T`.
+/// Tries to transform a slice from `start` to `start + N` into some value `T` with `f`.
 pub fn try_from_slice<T, const N: usize>(
     slice: &[u8],
     start: usize,

@@ -57,7 +57,6 @@ impl TrackerRequest {
             urlencoding::encode(&self.left.to_string()),
             //urlencoding::encode(self.event.as_ref().unwrap_or(&"".to_string())),
         );
-        println!("{:?}", final_url);
         let bytes = reqwest::get(final_url).await?.bytes().await?.to_vec();
 
         TrackerResponse::from_bcode(&bytes)

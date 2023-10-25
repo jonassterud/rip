@@ -1,16 +1,12 @@
 // https://wiki.theory.org/BitTorrentSpecification
 
 mod info;
-mod parse;
 mod tracker;
+mod download;
 
-use super::agent::traits::Download;
-use super::error::Error;
 use crate::prelude::*;
+use super::error::Error;
 use info::TorrentInfo;
-use std::future::Future;
-use std::path::Path;
-use std::pin::Pin;
 
 pub use tracker::Tracker;
 
@@ -41,9 +37,34 @@ pub struct Torrent {
 }
 
 impl Torrent {
-    /// Create [`Torrent`] from Bencoded bytes.
+    /// Create [`Torrent`] from bencoded bytes.
     pub fn from_bcode(contents: &[u8]) -> Result<Self, Error> {
-        Torrent::parse(contents)
+        let dictionary = decode(contents)?.try_as::<Dictionary>()?;
+        let info = dictionary.try_get_as::<Dictionary>("info")?;
+        let announce = String::from_utf8(dictionary.try_get_as::<ByteString>("announce")?.0)?;
+        let announce_list = None;
+        let creation_date = None;
+        let comment = None;
+        let created_by = None;
+        let encoding = None;
+        let info_hash = sha1_smol::Sha1::from(encode::<Dictionary>(&info))
+            .digest()
+            .bytes()
+            .to_vec();
+
+        Ok(Torrent {
+            info: TorrentInfo::from_bcode(info)?,
+            announce,
+            announce_list,
+            creation_date,
+            comment,
+            created_by,
+            encoding,
+
+            info_hash,
+            buffer: Vec::new(),
+            _uploaded: 0,
+        })
     }
 
     /// Read a pending [`Torrent`] download process stored on disk.
@@ -57,40 +78,3 @@ impl Torrent {
     }
 }
 
-impl Download for Torrent {
-    type Error = Error;
-
-    fn initiate(
-        &self,
-        agent: &Agent,
-        out: &Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>> {
-        let tracker_request = Tracker::create_request(&self, agent);
-        Box::pin(async move {
-            let tracker_response = tracker_request?.send().await?;
-            todo!("continue...");
-
-            Ok(())
-        })
-    }
-
-    fn get_uploaded(&self) -> usize {
-        self._uploaded
-    }
-
-    fn get_downloaded(&self) -> usize {
-        self.buffer.len()
-    }
-
-    fn get_left(&self) -> usize {
-        // TODO:
-        // From BEP-03:
-        // "Note that this can't be computed from downloaded
-        // and the file length since it might be a resume, and
-        // there's a chance that some of the downloaded data failed
-        // an integrity check and had to be re-downloaded."
-
-        // TODO: I think this is right (minus "TODO" above)
-        (self.info.piece_length * (self.info.pieces.len() / 20)) - self.get_downloaded()
-    }
-}
