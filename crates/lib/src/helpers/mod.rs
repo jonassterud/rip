@@ -7,7 +7,7 @@ pub fn try_from_slice<T, const N: usize>(
     f: &dyn Fn([u8; N]) -> T,
 ) -> Result<T, Error> {
     Ok(f(slice
-        .get(start..N)
+        .get(start..start + N)
         .ok_or_else(|| Error::Helper(format!("out of range")))?
         .try_into()
         .map_err(|_| Error::Helper(format!("slice too short")))?))
