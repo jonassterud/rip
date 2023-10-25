@@ -1,4 +1,4 @@
-use crate::error::Error;
+use crate::{error::Error, helpers};
 
 #[derive(Debug)]
 #[repr(u8)]
@@ -11,23 +11,98 @@ pub enum PeerMessage {
     ///
     NotInterested,
     /// `index`
-    Have(usize),
+    Have(u32),
     /// `bitfield`
     Bitfield(Vec<u8>),
     /// `index`, `begin`, `length`
-    Request(usize, usize, usize),
+    Request(u32, u32, u32),
     /// `index`, `begin`, `piece`
-    Piece(usize, usize, usize),
+    Piece(u32, u32, u32),
     /// `index`, `begin`, `length`
-    Cancel(usize, usize, usize),
+    Cancel(u32, u32, u32),
 }
 
+impl From<&PeerMessage> for u8 {
+    fn from(value: &PeerMessage) -> Self {
+        match value {
+            &PeerMessage::Choke => 0,
+            &PeerMessage::Unchoke => 1,
+            &PeerMessage::Interested => 2,
+            &PeerMessage::NotInterested => 3,
+            &PeerMessage::Have(_) => 4,
+            &PeerMessage::Bitfield(_) => 5,
+            &PeerMessage::Request(_, _, _) => 6,
+            &PeerMessage::Piece(_, _, _) => 7,
+            &PeerMessage::Cancel(_, _, _) => 8,
+        }
+    }
+}
+
+impl From<u8> for PeerMessage {
+    fn from(value: u8) -> Self {
+        match value {
+            0 => PeerMessage::Choke,
+            1 => PeerMessage::Unchoke,
+            2 => PeerMessage::Interested,
+            3 => PeerMessage::NotInterested,
+            4 => PeerMessage::Have(0),
+            5 => PeerMessage::Bitfield(Vec::new()),
+            6 => PeerMessage::Request(0, 0, 0),
+            7 => PeerMessage::Piece(0, 0, 0),
+            8 => PeerMessage::Cancel(0, 0, 0),
+            _ => panic!("unexpected peer message value: {value}"),
+        }
+    }
+}
 impl PeerMessage {
+    /// Get inner message (if any) as bytes.
+    fn message_as_bytes(&self) -> Vec<u8> {
+        match self {
+            PeerMessage::Choke => Vec::new(),
+            PeerMessage::Unchoke => Vec::new(),
+            PeerMessage::Interested => Vec::new(),
+            PeerMessage::NotInterested => Vec::new(),
+            PeerMessage::Have(f1) => f1.to_be_bytes().to_vec(),
+            PeerMessage::Bitfield(f1) => f1.clone(),
+            PeerMessage::Request(f1, f2, f3) => {
+                [f1.to_be_bytes(), f2.to_be_bytes(), f3.to_be_bytes()].concat()
+            }
+            PeerMessage::Piece(f1, f2, f3) => {
+                [f1.to_be_bytes(), f2.to_be_bytes(), f3.to_be_bytes()].concat()
+            }
+            PeerMessage::Cancel(f1, f2, f3) => {
+                [f1.to_be_bytes(), f2.to_be_bytes(), f3.to_be_bytes()].concat()
+            }
+        }
+    }
+
     pub fn as_bytes(&self) -> Vec<u8> {
-        todo!()
+        let mut out = Vec::new();
+
+        out.push(self.into());
+        out.append(&mut self.message_as_bytes());
+
+        out
     }
 
     pub fn try_from_bytes(contents: &[u8]) -> Result<Self, Error> {
-        todo!()
+        let variant = contents
+            .get(0)
+            .ok_or_else(|| Error::Peer(format!("missing message variant")))?;
+        let p1 = helpers::try_from_slice(&contents, 1, &u32::from_be_bytes);
+        let p2 = helpers::try_from_slice(&contents, 4, &u32::from_be_bytes);
+        let p3 = helpers::try_from_slice(&contents, 8, &u32::from_be_bytes);
+
+        match (*variant).into() {
+            PeerMessage::Choke => Ok(PeerMessage::Choke),
+            PeerMessage::Unchoke => Ok(PeerMessage::Unchoke),
+            PeerMessage::Interested => Ok(PeerMessage::Interested),
+            PeerMessage::NotInterested => Ok(PeerMessage::NotInterested),
+            PeerMessage::Have(_) => Ok(PeerMessage::Have(p1?)),
+            PeerMessage::Bitfield(_) => Ok(PeerMessage::Bitfield(contents[1..].to_vec())),
+            PeerMessage::Request(_, _, _) => Ok(PeerMessage::Request(p1?, p2?, p3?)),
+            PeerMessage::Piece(_, _, _) => Ok(PeerMessage::Piece(p1?, p2?, p3?)),
+            PeerMessage::Cancel(_, _, _) => Ok(PeerMessage::Cancel(p1?, p2?, p3?)),
+        }
     }
 }

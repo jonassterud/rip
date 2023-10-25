@@ -1,5 +1,3 @@
-use std::error;
-
 use crate::prelude::*;
 // TODO: Add backtrace after this is merged: https://github.com/rust-lang/rust/issues/99301
 
@@ -20,6 +18,9 @@ pub enum Error {
     /// Agent error.
     #[error("agent error: {0}")]
     Agent(String),
+    /// Helper error.
+    #[error("helper error: {0}")]
+    Helper(String),
     /// Unexpected error.
     #[error("unexpected error: {0}")]
     Unexpected(String),
@@ -46,6 +47,12 @@ pub enum Error {
     _FromUtf8 {
         #[from]
         source: std::string::FromUtf8Error,
+    },
+    /// [`std::array::TryFromSliceError`]
+    #[error("from slice to integer: {source:?}")]
+    _TryFromSliceError {
+        #[from]
+        source: std::array::TryFromSliceError,
     },
     /// [`reqwest::Error`]
     #[error("processing a request failed: {source:?}")]

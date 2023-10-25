@@ -1,6 +1,7 @@
 mod agent;
 mod bcode;
 mod error;
+mod helpers;
 mod peer;
 mod torrent;
 

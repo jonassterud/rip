@@ -88,14 +88,16 @@ impl Peer {
         self._incoming = Some(incoming_r);
         self._tasks.1 = Some(tokio::spawn(async move {
             loop {
-                let mut buffer = Vec::new();
-                let message = loop {
-                    incoming_stream.lock().await.read(&mut buffer)?;
-                    if let Ok(message) = PeerMessage::try_from_bytes(&buffer) {
-                        break message;
-                    }
-                };
+                let mut incoming_stream = incoming_stream.lock().await; // todo: will this block?
 
+                let mut length_buffer = [0_u8; 4];
+                incoming_stream.read_exact(&mut length_buffer)?;
+
+                let message_length = u32::from_be_bytes(length_buffer) as usize;
+                let mut message_buffer = vec![0_u8; message_length];
+                incoming_stream.read_exact(&mut message_buffer)?;
+
+                let message = PeerMessage::try_from_bytes(&message_buffer)?;
                 incoming_s.send(message)?;
             }
         }));
