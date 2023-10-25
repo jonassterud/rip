@@ -6,6 +6,10 @@
 	"features": {
 		"ghcr.io/devcontainers/features/rust:1": {}
 	},
+    "postCreateCommand": {
+        "rust-nightly": "rustup toolchain install nightly",
+        "rustfmt-nightly": "rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu"
+    },
 	"customizations": {
 		"vscode": {
             "settings": {
