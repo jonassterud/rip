@@ -5,9 +5,9 @@ use crate::prelude::*;
 #[derive(Debug)]
 pub struct TrackerResponse {
     /// Number of seconds to wait between regular rerequests.
-    interval: usize,
+    pub interval: usize,
     /// List of peers.
-    peers: Vec<Peer>,
+    pub peers: Vec<Peer>,
 }
 
 impl TrackerResponse {

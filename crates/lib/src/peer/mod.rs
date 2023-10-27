@@ -58,20 +58,27 @@ impl Peer {
     /// Connect and start listening for incoming and outgoing messages.
     pub fn connect(
         &mut self,
-        incoming_buffer: usize,
-        hash: Vec<u8>,
-        id: [u8; 20],
+        buffer_size: usize,
+        hash: &[u8],
+        id: &[u8],
     ) -> Result<(), Error> {
         // Connect and initialize a stream
-        let address: String = format!(
-            "{}:{}",
+        let address = (
             self.ip
                 .iter()
                 .cloned()
                 .map(|b| b as char)
                 .collect::<String>(),
-            self.port.to_string()
+            self.port
         );
+
+        // TODO: Fix IPV6: https://users.rust-lang.org/t/how-to-connect-to-an-ipv6-link-local-address/54372/3
+        if address.0.contains(":") {
+            return Ok(());
+        } else {
+            println!("{address:?}")
+        }
+
         self._stream = Some(Arc::new(Mutex::new(TcpStream::connect(address)?)));
 
         // Create handshake
@@ -89,6 +96,8 @@ impl Peer {
                     .lock()
                     .await
                     .write_all(&mut handshake_bytes)?;
+
+                println!("handshake sent");
             }
 
             while let Some(message) = outgoing_r.recv().await {
@@ -103,7 +112,7 @@ impl Peer {
 
         // Create an incoming task
         let incoming_stream = self._stream.clone().unwrap();
-        let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(incoming_buffer);
+        let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(buffer_size);
         self._incoming = Some(incoming_r);
         self._tasks.1 = Some(tokio::spawn(async move {
             {
@@ -113,6 +122,8 @@ impl Peer {
                     .await
                     .read_exact(&mut handshake_buffer)?;
                 handshake.verify(&handshake_buffer)?;
+
+                println!("handshake verified");
             }
 
             loop {
@@ -126,6 +137,8 @@ impl Peer {
                 incoming_stream.read_exact(&mut message_buffer)?;
 
                 let message = PeerMessage::try_from_bytes(&message_buffer)?;
+                println!("{message:?}");
+
                 incoming_s.send(message)?;
             }
         }));

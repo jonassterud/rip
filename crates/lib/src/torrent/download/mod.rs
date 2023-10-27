@@ -14,12 +14,17 @@ impl Download for Torrent {
         agent: &Agent,
         out: &Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>> {
+        let hash = self.get_hash().to_vec();
         let id = Alphanumeric.sample_iter(&mut rand::thread_rng()).take(20).collect::<Vec<u8>>();
         let tracker_request = Tracker::create_request(&self, agent, &id);
 
         Box::pin(async move {
             let tracker_response = tracker_request?.send().await?;
-            todo!("continue...");
+            for mut peer in tracker_response.peers {
+                peer.connect(10, &hash, &id)?;
+
+                //todo!("continue...");
+            }
 
             Ok(())
         })

@@ -64,7 +64,7 @@ impl Agent {
     /// Start a download process for all pending files.
     pub async fn download(self, out: &Path) -> Result<(), Error> {
         for (_, file) in &self.files {
-            self.futures.push(Box::pin(file.initiate(&self, out)));
+            self.futures.push(file.initiate(&self, out));
         }
 
         try_join_all(self.futures.into_iter()).await?;

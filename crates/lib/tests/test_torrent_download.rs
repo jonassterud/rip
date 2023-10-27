@@ -10,4 +10,6 @@ async fn test_torrent_download() {
     let mut agent = Agent::new().unwrap();
     agent.add_torrents(vec![torrent_path]).await.unwrap();
     agent.download(&out_path).await.unwrap();
+
+    std::io::read_to_string(std::io::stdin()).unwrap();
 }

@@ -6,13 +6,13 @@ pub struct PeerHandshake(Vec<u8>);
 
 impl PeerHandshake {
     /// Create a new handshake.
-    pub fn new(hash: Vec<u8>, id: [u8; 20]) -> Self {
+    pub fn new(hash: &[u8], id: &[u8]) -> Self {
         let mut bytes = Vec::new();
 
         bytes.push(19);
         bytes.append(&mut b"BitTorrent protocol".to_vec());
         bytes.append(&mut vec![0, 0, 0, 0, 0, 0, 0, 0]);
-        bytes.append(&mut hash.clone());
+        bytes.append(&mut hash.to_vec());
         bytes.append(&mut id.to_vec());
 
         Self(bytes)
