@@ -1,6 +1,6 @@
-use crate::prelude::*;
 use crate::agent::traits::Download;
 use crate::error::Error;
+use crate::prelude::*;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;

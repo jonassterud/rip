@@ -1,11 +1,11 @@
 // https://wiki.theory.org/BitTorrentSpecification
 
+mod download;
 mod info;
 mod tracker;
-mod download;
 
-use crate::prelude::*;
 use super::error::Error;
+use crate::prelude::*;
 use info::TorrentInfo;
 
 pub use tracker::Tracker;
@@ -77,4 +77,3 @@ impl Torrent {
         self.info_hash.as_slice()
     }
 }
-

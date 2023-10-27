@@ -1,7 +1,9 @@
+mod handshake;
 mod message;
 
 use crate::error::Error;
 use crate::prelude::*;
+pub use handshake::PeerHandshake;
 pub use message::PeerMessage;
 use std::io::{Read, Write};
 use std::net::TcpStream;
@@ -54,7 +56,12 @@ impl Peer {
     }
 
     /// Connect and start listening for incoming and outgoing messages.
-    pub fn connect(&mut self, incoming_buffer: usize) -> Result<(), Error> {
+    pub fn connect(
+        &mut self,
+        incoming_buffer: usize,
+        hash: Vec<u8>,
+        id: [u8; 20],
+    ) -> Result<(), Error> {
         // Connect and initialize a stream
         let address: String = format!(
             "{}:{}",
@@ -67,11 +74,23 @@ impl Peer {
         );
         self._stream = Some(Arc::new(Mutex::new(TcpStream::connect(address)?)));
 
+        // Create handshake
+        let handshake = PeerHandshake::new(hash, id);
+        let mut handshake_bytes = handshake.as_bytes();
+
         // Create an outgoing task
         let outgoing_stream = self._stream.clone().unwrap();
         let (outgoing_s, mut outgoing_r) = tokio_mpsc::unbounded_channel::<PeerMessage>();
         self._outgoing = Some(outgoing_s);
+
         self._tasks.0 = Some(tokio::spawn(async move {
+            {
+                outgoing_stream
+                    .lock()
+                    .await
+                    .write_all(&mut handshake_bytes)?;
+            }
+
             while let Some(message) = outgoing_r.recv().await {
                 outgoing_stream
                     .lock()
@@ -87,6 +106,15 @@ impl Peer {
         let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(incoming_buffer);
         self._incoming = Some(incoming_r);
         self._tasks.1 = Some(tokio::spawn(async move {
+            {
+                let mut handshake_buffer = [0_u8; 49 + 19];
+                incoming_stream
+                    .lock()
+                    .await
+                    .read_exact(&mut handshake_buffer)?;
+                handshake.verify(&handshake_buffer)?;
+            }
+
             loop {
                 let mut incoming_stream = incoming_stream.lock().await; // todo: will this block?
 
