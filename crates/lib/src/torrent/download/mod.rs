@@ -4,6 +4,7 @@ use crate::prelude::*;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
+use rand::distributions::{Distribution, Alphanumeric};
 
 impl Download for Torrent {
     type Error = Error;
@@ -13,7 +14,9 @@ impl Download for Torrent {
         agent: &Agent,
         out: &Path,
     ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>> {
-        let tracker_request = Tracker::create_request(&self, agent);
+        let id = Alphanumeric.sample_iter(&mut rand::thread_rng()).take(20).collect::<Vec<u8>>();
+        let tracker_request = Tracker::create_request(&self, agent, &id);
+
         Box::pin(async move {
             let tracker_response = tracker_request?.send().await?;
             todo!("continue...");
