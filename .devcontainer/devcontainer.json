@@ -4,12 +4,13 @@
         "dockerfile": "Dockerfile"
     },
 	"features": {
-		"ghcr.io/devcontainers/features/rust:1": {}
+        // https://github.com/microsoft/vscode-dev-containers/issues/1217
+        "ghcr.io/devcontainers/features/rust:1": {
+            "version": "latest",
+			"profile": "minimal"
+		}	
 	},
-    "postCreateCommand": {
-        "rust-nightly": "rustup toolchain install nightly",
-        "rustfmt-nightly": "rustup component add rustfmt --toolchain nightly-x86_64-unknown-linux-gnu"
-    },
+    "postCreateCommand": "rustup default nightly && rustup component add rustfmt && rustup component add clippy",
 	"customizations": {
 		"vscode": {
             "settings": {
