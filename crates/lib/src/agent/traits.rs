@@ -1,6 +1,7 @@
 use crate::prelude::*;
-use std::pin::Pin;
-use std::{future::Future, path::Path};
+use std::path::Path;
+use tokio::task::JoinHandle;
+use crate::error::Error;
 
 /// "Downloadable" trait.
 pub trait Download {
@@ -11,7 +12,7 @@ pub trait Download {
         &'a self,
         agent: &'a Agent,
         out: &'a Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>>;
+    ) -> JoinHandle<Result<(), Error>>;
 
     /// Get total amount uploaded.
     fn get_uploaded(&self) -> usize;

@@ -22,14 +22,11 @@ pub struct Peer {
     ip: Vec<u8>,
     /// IP port.
     port: u16,
-
+    
+    /// Outgoing and incoming connection tasks.
+    pub tasks: Vec<JoinHandle<Result<(), Error>>>,
     /// TCP stream.
     _stream: Option<Arc<Mutex<TcpStream>>>,
-    /// Outgoing and incoming connection tasks.
-    _tasks: (
-        Option<JoinHandle<Result<(), Error>>>,
-        Option<JoinHandle<Result<(), Error>>>,
-    ),
     /// Outgoing message sender.
     _outgoing: Option<tokio_mpsc::UnboundedSender<PeerMessage>>,
     /// Incoming message receiver.
@@ -48,8 +45,8 @@ impl Peer {
             ip,
             port,
 
+            tasks: Vec::new(),
             _stream: None,
-            _tasks: (None, None),
             _outgoing: None,
             _incoming: None,
         })
@@ -90,15 +87,11 @@ impl Peer {
         let (outgoing_s, mut outgoing_r) = tokio_mpsc::unbounded_channel::<PeerMessage>();
         self._outgoing = Some(outgoing_s);
 
-        self._tasks.0 = Some(tokio::spawn(async move {
-            {
-                outgoing_stream
-                    .lock()
-                    .await
-                    .write_all(&mut handshake_bytes)?;
-
-                println!("handshake sent");
-            }
+        self.tasks.push(tokio::spawn(async move {
+            outgoing_stream
+                .lock()
+                .await
+                .write_all(&mut handshake_bytes)?;            
 
             while let Some(message) = outgoing_r.recv().await {
                 outgoing_stream
@@ -114,17 +107,14 @@ impl Peer {
         let incoming_stream = self._stream.clone().unwrap();
         let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(buffer_size);
         self._incoming = Some(incoming_r);
-        self._tasks.1 = Some(tokio::spawn(async move {
-            {
-                let mut handshake_buffer = [0_u8; 49 + 19];
-                incoming_stream
-                    .lock()
-                    .await
-                    .read_exact(&mut handshake_buffer)?;
-                handshake.verify(&handshake_buffer)?;
-
-                println!("handshake verified");
-            }
+        self.tasks.push(tokio::spawn(async move {
+            let mut handshake_buffer = [0_u8; 49 + 19];
+            incoming_stream
+                .lock()
+                .await
+                .read_exact(&mut handshake_buffer)?;
+            handshake.verify(&handshake_buffer)?;
+            
 
             loop {
                 let mut incoming_stream = incoming_stream.lock().await; // todo: will this block?

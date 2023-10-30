@@ -4,6 +4,8 @@ use crate::prelude::*;
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
+use futures::future::try_join_all;
+use tokio::task::JoinHandle;
 use rand::distributions::{Distribution, Alphanumeric};
 
 impl Download for Torrent {
@@ -13,19 +15,23 @@ impl Download for Torrent {
         &self,
         agent: &Agent,
         out: &Path,
-    ) -> Pin<Box<dyn Future<Output = Result<(), Self::Error>>>> {
+    ) -> JoinHandle<Result<(), Error>> {
         let hash = self.get_hash().to_vec();
         let id = Alphanumeric.sample_iter(&mut rand::thread_rng()).take(20).collect::<Vec<u8>>();
         let tracker_request = Tracker::create_request(&self, agent, &id);
 
-        Box::pin(async move {
+        tokio::spawn(async move {
             let tracker_response = tracker_request?.send().await?;
+        
             for mut peer in tracker_response.peers {
                 peer.connect(10, &hash, &id)?;
 
+                try_join_all(peer.tasks).await?;
+                
+    
                 //todo!("continue...");
             }
-
+    
             Ok(())
         })
     }

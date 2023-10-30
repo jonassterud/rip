@@ -9,12 +9,12 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use tokio::task::JoinSet;
+use tokio::task::{JoinSet, JoinHandle};
 
 /// Agent, which handles download process.
 pub struct Agent {
     files: HashMap<Vec<u8>, Box<dyn Download<Error = Error>>>,
-    futures: FuturesUnordered<Pin<Box<dyn Future<Output = Result<(), Error>>>>>,
+    futures: Vec<JoinHandle<Result<(), Error>>>,
 }
 
 impl Agent {
@@ -22,7 +22,7 @@ impl Agent {
     pub fn new() -> Result<Self, Error> {
         Ok(Self {
             files: HashMap::new(),
-            futures: FuturesUnordered::new(),
+            futures: Vec::new(),
         })
     }
 
@@ -62,12 +62,12 @@ impl Agent {
     }
 
     /// Start a download process for all pending files.
-    pub async fn download(self, out: &Path) -> Result<(), Error> {
+    pub async fn download(mut self, out: &Path) -> Result<(), Error> {
         for (_, file) in &self.files {
             self.futures.push(file.initiate(&self, out));
         }
 
-        try_join_all(self.futures.into_iter()).await?;
+        try_join_all(self.futures).await?;
 
         Ok(())
     }
