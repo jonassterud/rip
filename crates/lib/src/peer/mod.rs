@@ -3,6 +3,7 @@ mod message;
 
 use crate::error::Error;
 use crate::prelude::*;
+use futures::future::try_join_all;
 pub use handshake::PeerHandshake;
 pub use message::PeerMessage;
 use std::io::{Read, Write};
@@ -24,7 +25,7 @@ pub struct Peer {
     port: u16,
     
     /// Outgoing and incoming connection tasks.
-    pub tasks: Vec<JoinHandle<Result<(), Error>>>,
+    _tasks: Vec<JoinHandle<Result<(), Error>>>,
     /// TCP stream.
     _stream: Option<Arc<Mutex<TcpStream>>>,
     /// Outgoing message sender.
@@ -45,7 +46,7 @@ impl Peer {
             ip,
             port,
 
-            tasks: Vec::new(),
+            _tasks: Vec::new(),
             _stream: None,
             _outgoing: None,
             _incoming: None,
@@ -87,7 +88,7 @@ impl Peer {
         let (outgoing_s, mut outgoing_r) = tokio_mpsc::unbounded_channel::<PeerMessage>();
         self._outgoing = Some(outgoing_s);
 
-        self.tasks.push(tokio::spawn(async move {
+        self._tasks.push(tokio::spawn(async move {
             outgoing_stream
                 .lock()
                 .await
@@ -107,7 +108,7 @@ impl Peer {
         let incoming_stream = self._stream.clone().unwrap();
         let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(buffer_size);
         self._incoming = Some(incoming_r);
-        self.tasks.push(tokio::spawn(async move {
+        self._tasks.push(tokio::spawn(async move {
             let mut handshake_buffer = [0_u8; 49 + 19];
             incoming_stream
                 .lock()
@@ -132,6 +133,13 @@ impl Peer {
                 incoming_s.send(message)?;
             }
         }));
+
+        Ok(())
+    }
+
+    /// Awaits all tasks.
+    pub async fn join(self) -> Result<(), Error> {
+        try_join_all(self._tasks).await?;
 
         Ok(())
     }

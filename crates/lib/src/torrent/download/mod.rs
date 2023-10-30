@@ -22,15 +22,21 @@ impl Download for Torrent {
 
         tokio::spawn(async move {
             let tracker_response = tracker_request?.send().await?;
+            let mut tasks: Vec<JoinHandle<Result<(), Error>>> = Vec::new();
         
             for mut peer in tracker_response.peers {
                 peer.connect(10, &hash, &id)?;
 
-                try_join_all(peer.tasks).await?;
-                
+                tasks.push(tokio::spawn(async move {
+                    peer.join().await?;
+
+                    Ok(())
+                }));
     
                 //todo!("continue...");
             }
+
+            try_join_all(tasks).await?;
     
             Ok(())
         })
