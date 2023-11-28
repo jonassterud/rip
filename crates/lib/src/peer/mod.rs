@@ -115,19 +115,23 @@ impl Peer {
                 .await
                 .read_exact(&mut handshake_buffer)?;
             handshake.verify(&handshake_buffer)?;
-            
+
+            println!("handshaked");
 
             loop {
                 let mut incoming_stream = incoming_stream.lock().await; // todo: will this block?
 
                 let mut length_buffer = [0_u8; 4];
                 incoming_stream.read_exact(&mut length_buffer)?;
+                
+                let payload_length = u32::from_be_bytes(length_buffer) as usize;
+                let mut payload_buffer = vec![0_u8; payload_length];
+                incoming_stream.read_exact(&mut payload_buffer)?;
 
-                let message_length = u32::from_be_bytes(length_buffer) as usize;
-                let mut message_buffer = vec![0_u8; message_length];
-                incoming_stream.read_exact(&mut message_buffer)?;
-
-                let message = PeerMessage::try_from_bytes(&message_buffer)?;
+                let mut message_bytes = length_buffer.to_vec();
+                message_bytes.append(&mut payload_buffer);
+                
+                let message = PeerMessage::try_from_bytes(&message_bytes)?;
                 println!("{message:?}");
 
                 incoming_s.send(message)?;
