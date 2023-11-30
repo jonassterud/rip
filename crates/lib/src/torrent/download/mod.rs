@@ -1,43 +1,44 @@
 use crate::agent::traits::Download;
 use crate::error::Error;
 use crate::prelude::*;
+use futures::future::try_join_all;
+use rand::distributions::{Alphanumeric, Distribution};
 use std::future::Future;
 use std::path::Path;
 use std::pin::Pin;
-use futures::future::try_join_all;
 use tokio::task::JoinHandle;
-use rand::distributions::{Distribution, Alphanumeric};
 
 impl Download for Torrent {
     type Error = Error;
 
-    fn initiate(
-        &self,
-        agent: &Agent,
-        out: &Path,
-    ) -> JoinHandle<Result<(), Error>> {
+    fn initiate(&self, agent: &Agent, out: &Path) -> JoinHandle<Result<(), Error>> {
         let hash = self.get_hash().to_vec();
-        let id = Alphanumeric.sample_iter(&mut rand::thread_rng()).take(20).collect::<Vec<u8>>();
+        let id = Alphanumeric
+            .sample_iter(&mut rand::thread_rng())
+            .take(20)
+            .collect::<Vec<u8>>();
         let tracker_request = Tracker::create_request(&self, agent, &id);
 
         tokio::spawn(async move {
             let tracker_response = tracker_request?.send().await?;
             let mut tasks: Vec<JoinHandle<Result<(), Error>>> = Vec::new();
-        
+
             for mut peer in tracker_response.peers {
-                peer.connect(10, &hash, &id)?;
+                if peer.connect(10, &hash, &id).is_ok() {
+                    peer.handle_messages()?;
+                    
+                    tasks.push(tokio::spawn(async move {
+                        peer.join().await?;
 
-                tasks.push(tokio::spawn(async move {
-                    peer.join().await?;
+                        Ok(())
+                    }));
+                }
 
-                    Ok(())
-                }));
-    
                 //todo!("continue...");
             }
 
             try_join_all(tasks).await?;
-    
+
             Ok(())
         })
     }
