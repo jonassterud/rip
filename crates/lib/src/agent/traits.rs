@@ -1,18 +1,14 @@
+use crate::error::Error;
 use crate::prelude::*;
 use std::path::Path;
 use tokio::task::JoinHandle;
-use crate::error::Error;
 
 /// "Downloadable" trait.
 pub trait Download {
     type Error;
 
     /// Get download future.
-    fn initiate<'a>(
-        &'a self,
-        agent: &'a Agent,
-        out: &'a Path,
-    ) -> JoinHandle<Result<(), Error>>;
+    fn initiate<'a>(&'a self, agent: &'a Agent, out: &'a Path) -> JoinHandle<Result<(), Error>>;
 
     /// Get total amount uploaded.
     fn get_uploaded(&self) -> usize;

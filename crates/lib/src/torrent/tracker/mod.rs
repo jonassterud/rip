@@ -12,7 +12,11 @@ pub struct Tracker {}
 
 impl Tracker {
     /// Create a [`TrackerRequest`] for a `torrent` and its `agent`.
-    pub fn create_request(torrent: &Torrent, agent: &Agent, id: &[u8]) -> Result<TrackerRequest, Error> {
+    pub fn create_request(
+        torrent: &Torrent,
+        agent: &Agent,
+        id: &[u8],
+    ) -> Result<TrackerRequest, Error> {
         TrackerRequest::with(torrent, agent, id)
     }
 }

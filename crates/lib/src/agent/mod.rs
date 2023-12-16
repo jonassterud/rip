@@ -9,7 +9,7 @@ use std::collections::HashMap;
 use std::future::Future;
 use std::path::{Path, PathBuf};
 use std::pin::Pin;
-use tokio::task::{JoinSet, JoinHandle};
+use tokio::task::{JoinHandle, JoinSet};
 
 /// Agent, which handles download process.
 pub struct Agent {
