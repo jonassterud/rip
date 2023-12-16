@@ -23,6 +23,9 @@ pub struct TrackerRequest {
     pub left: usize,
     /// Optional status.
     pub event: Option<String>,
+
+    /// Torrent bitfield length.
+    pub _bitfield_length: usize,
 }
 
 impl TrackerRequest {
@@ -40,6 +43,8 @@ impl TrackerRequest {
             downloaded: file.get_downloaded(),
             left: file.get_left(),
             event: None,
+
+            _bitfield_length: torrent.get_bitfield_length(),
         })
     }
 
@@ -58,6 +63,6 @@ impl TrackerRequest {
         );
         let bytes = reqwest::get(final_url).await?.bytes().await?.to_vec();
 
-        TrackerResponse::from_bcode(&bytes)
+        TrackerResponse::from_bcode(&bytes, self._bitfield_length)
     }
 }

@@ -76,4 +76,12 @@ impl Torrent {
     pub fn get_hash(&self) -> &[u8] {
         self.info_hash.as_slice()
     }
+
+    /// Get length of bitfield.
+    pub fn get_bitfield_length(&self) -> usize {
+        const SHA1_HASH_LENGTH: usize = 20;
+        const BYTE_LENGTH: usize = 8;
+
+        (self.info.pieces.len() / SHA1_HASH_LENGTH) / BYTE_LENGTH
+    }
 }

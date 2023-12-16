@@ -45,7 +45,7 @@ pub struct InnerPeer {
 
 impl Peer {
     /// Create [`Peer`] from bencoded dictionary.
-    pub fn from_bcode(dictionary: &Dictionary) -> Result<Self, Error> {
+    pub fn from_bcode(dictionary: &Dictionary, bitfield_length: usize) -> Result<Self, Error> {
         let id = dictionary.try_get_as::<ByteString>("peer id")?.0;
         let ip = dictionary.try_get_as::<ByteString>("ip")?.0;
         let port = dictionary.try_get_as::<Integer>("port")?.0 as u16;
@@ -59,7 +59,7 @@ impl Peer {
             am_interested: false,
             peer_choking: true,
             peer_interested: false,
-            bitfield: Vec::new(), // TODO: Initialize empty bitfield instead (peer doesn't have to send bitfield message)
+            bitfield: vec![0_u8; bitfield_length],
 
             _tasks: Some(Vec::new()),
             _stream: None,
