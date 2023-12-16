@@ -4,11 +4,8 @@ use self::traits::Download;
 use super::error::Error;
 use super::torrent::Torrent;
 use futures::future::try_join_all;
-use futures::stream::FuturesUnordered;
 use std::collections::HashMap;
-use std::future::Future;
 use std::path::{Path, PathBuf};
-use std::pin::Pin;
 use tokio::task::{JoinHandle, JoinSet};
 
 /// Agent, which handles download process.
