@@ -59,7 +59,7 @@ impl Peer {
             am_interested: false,
             peer_choking: true,
             peer_interested: false,
-            bitfield: Vec::new(),
+            bitfield: Vec::new(), // TODO: Initialize empty bitfield instead (peer doesn't have to send bitfield message)
 
             _tasks: Some(Vec::new()),
             _stream: None,
@@ -189,7 +189,10 @@ impl Peer {
                         PeerMessage::Unchoke => inner_clone.peer_choking = false,
                         PeerMessage::Interested => inner_clone.peer_interested = true,
                         PeerMessage::NotInterested => inner_clone.peer_interested = false,
-                        PeerMessage::Have(_) => todo!(),
+                        PeerMessage::Have(index) => {
+                            let (byte_index, bit_index) = (index as usize / 8, index % 8);
+                            inner_clone.bitfield[byte_index] |= 128_u8 >> bit_index;
+                        }, 
                         PeerMessage::Bitfield(bitfield) => inner_clone.bitfield = bitfield,
                         PeerMessage::Request(_, _, _) => todo!(),
                         PeerMessage::Piece(_, _, _) => todo!(),
