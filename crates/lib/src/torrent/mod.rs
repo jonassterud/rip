@@ -4,6 +4,9 @@ mod download;
 mod info;
 mod tracker;
 
+use std::sync::Arc;
+use tokio::sync::Mutex;
+
 use super::error::Error;
 use crate::prelude::*;
 use info::TorrentInfo;
@@ -31,7 +34,7 @@ pub struct Torrent {
     /// SHA1 hash of info dictionary.
     info_hash: Vec<u8>,
     /// Download buffer.
-    buffer: Vec<u8>,
+    buffer: Arc<Mutex<Vec<u8>>>,
     /// Total amount uploaded.
     _uploaded: usize,
 }
@@ -40,20 +43,25 @@ impl Torrent {
     /// Create [`Torrent`] from bencoded bytes.
     pub fn from_bcode(contents: &[u8]) -> Result<Self, Error> {
         let dictionary = decode(contents)?.try_as::<Dictionary>()?;
-        let info = dictionary.try_get_as::<Dictionary>("info")?;
+        let info_dictionary = dictionary.try_get_as::<Dictionary>("info")?;
+        let info = TorrentInfo::from_bcode(info_dictionary.clone())?;
         let announce = String::from_utf8(dictionary.try_get_as::<ByteString>("announce")?.0)?;
         let announce_list = None;
         let creation_date = None;
         let comment = None;
         let created_by = None;
         let encoding = None;
-        let info_hash = sha1_smol::Sha1::from(encode::<Dictionary>(&info))
+        let info_hash = sha1_smol::Sha1::from(encode::<Dictionary>(&info_dictionary))
             .digest()
             .bytes()
             .to_vec();
+        let buffer = Arc::new(Mutex::new(vec![
+            0;
+            (info.pieces.len() / 20) * info.piece_length
+        ]));
 
         Ok(Torrent {
-            info: TorrentInfo::from_bcode(info)?,
+            info,
             announce,
             announce_list,
             creation_date,
@@ -62,7 +70,7 @@ impl Torrent {
             encoding,
 
             info_hash,
-            buffer: Vec::new(),
+            buffer,
             _uploaded: 0,
         })
     }

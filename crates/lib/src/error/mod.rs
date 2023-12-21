@@ -68,8 +68,14 @@ pub enum Error {
     },
     /// [`tokio::sync::mpsc::error::SendError`]
     #[error("sending/receiving a message failed: {source:?}")]
-    _TokioSend {
+    _TokioSendPeerMessage {
         #[from]
         source: tokio::sync::mpsc::error::SendError<PeerMessage>,
+    },
+    /// [`tokio::sync::mpsc::error::SendError`]
+    #[error("sending/receiving a message failed: {source:?}")]
+    _TokioSendPiece {
+        #[from]
+        source: tokio::sync::mpsc::error::SendError<(u32, u32, Vec<u8>)>,
     },
 }

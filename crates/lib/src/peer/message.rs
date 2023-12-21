@@ -109,7 +109,9 @@ impl PeerMessage {
             PeerMessage::Have(_) => Ok(PeerMessage::Have(p1?)),
             PeerMessage::Bitfield(_) => Ok(PeerMessage::Bitfield(contents[5..].to_vec())),
             PeerMessage::Request(_, _, _) => Ok(PeerMessage::Request(p1?, p2?, p3?)),
-            PeerMessage::Piece(_, _, _) => Ok(PeerMessage::Piece(p1?, p2?, contents[13..].to_vec())),
+            PeerMessage::Piece(_, _, _) => {
+                Ok(PeerMessage::Piece(p1?, p2?, contents[13..].to_vec()))
+            }
             PeerMessage::Cancel(_, _, _) => Ok(PeerMessage::Cancel(p1?, p2?, p3?)),
         }
     }

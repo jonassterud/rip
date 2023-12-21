@@ -88,7 +88,8 @@ impl Peer {
             inner.port,
         );
 
-        // TODO: Fix IPV6: https://users.rust-lang.org/t/how-to-connect-to-an-ipv6-link-local-address/54372/3
+        // TODO: Fix IPV6.. Maybe I need a 6to4 tunnel (e.g. https://tunnelbroker.net/)...
+
         if address.0.contains(":") {
             return Err(Error::Peer(format!("ipv6 not supported")));
         } else {
@@ -167,7 +168,10 @@ impl Peer {
         Ok(())
     }
 
-    pub async fn handle_messages(&mut self) -> Result<(), Error> {
+    pub async fn handle_messages(
+        &mut self,
+        sender: tokio_mpsc::UnboundedSender<(u32, u32, Vec<u8>)>,
+    ) -> Result<(), Error> {
         let mut inner = self.0.lock().await;
 
         let incoming_r = inner
@@ -184,6 +188,8 @@ impl Peer {
                 while let Ok(message) = incoming_r.recv() {
                     let mut inner_clone = self_clone.0.lock().await;
 
+                    println!("{message:?}");
+
                     match message {
                         PeerMessage::Choke => inner_clone.peer_choking = true,
                         PeerMessage::Unchoke => inner_clone.peer_choking = false,
@@ -192,10 +198,12 @@ impl Peer {
                         PeerMessage::Have(index) => {
                             let (byte_index, bit_index) = (index as usize / 8, index % 8);
                             inner_clone.bitfield[byte_index] |= 128_u8 >> bit_index;
-                        }, 
+                        }
                         PeerMessage::Bitfield(bitfield) => inner_clone.bitfield = bitfield,
                         PeerMessage::Request(_, _, _) => todo!(),
-                        PeerMessage::Piece(_, _, _) => todo!(),
+                        PeerMessage::Piece(index, begin, piece) => {
+                            sender.send((index, begin, piece))?;
+                        }
                         PeerMessage::Cancel(_, _, _) => todo!(),
                     }
                 }
