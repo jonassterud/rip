@@ -8,9 +8,8 @@ pub use handshake::PeerHandshake;
 pub use message::PeerMessage;
 use std::io::{Read, Write};
 use std::net::TcpStream;
-use std::sync::mpsc as std_mpsc;
 use std::sync::Arc;
-use tokio::sync::mpsc as tokio_mpsc;
+use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
 
@@ -38,9 +37,9 @@ pub struct InnerPeer {
     /// TCP stream.
     _stream: Option<Arc<Mutex<TcpStream>>>,
     /// Outgoing message sender.
-    _outgoing: Option<tokio_mpsc::UnboundedSender<PeerMessage>>,
+    _outgoing: Option<mpsc::UnboundedSender<PeerMessage>>,
     /// Incoming message receiver.
-    _incoming: Option<std_mpsc::Receiver<PeerMessage>>,
+    _incoming: Option<mpsc::Receiver<PeerMessage>>,
 }
 
 impl Peer {
@@ -104,7 +103,13 @@ impl Peer {
 
         // Create an outgoing task
         let outgoing_stream = inner._stream.clone().unwrap();
-        let (outgoing_s, mut outgoing_r) = tokio_mpsc::unbounded_channel::<PeerMessage>();
+        let (outgoing_s, mut outgoing_r) = mpsc::unbounded_channel::<PeerMessage>();
+        
+        // TODO: temp start
+        outgoing_s.send(PeerMessage::Interested)?;
+        outgoing_s.send(PeerMessage::Unchoke)?;
+        // TODO: temp end
+
         inner._outgoing = Some(outgoing_s);
 
         inner
@@ -129,7 +134,7 @@ impl Peer {
 
         // Create an incoming task
         let incoming_stream = inner._stream.clone().unwrap();
-        let (incoming_s, incoming_r) = std_mpsc::sync_channel::<PeerMessage>(buffer_size);
+        let (incoming_s, incoming_r) = mpsc::channel::<PeerMessage>(buffer_size);
         inner._incoming = Some(incoming_r);
 
         inner
@@ -161,55 +166,72 @@ impl Peer {
 
                     let message = PeerMessage::try_from_bytes(&message_bytes)?;
 
-                    incoming_s.send(message)?;
+                    println!("got message inside loop: {:?}", message);
+
+                    incoming_s.send(message).await?;
                 }
             }));
+
+        println!("connected");
 
         Ok(())
     }
 
     pub async fn handle_messages(
         &mut self,
-        sender: tokio_mpsc::UnboundedSender<(u32, u32, Vec<u8>)>,
+        sender: mpsc::UnboundedSender<(u32, u32, Vec<u8>)>,
     ) -> Result<(), Error> {
+        println!("started handle_messages");
+
         let mut inner = self.0.lock().await;
 
-        let incoming_r = inner
+        let mut incoming_r = inner
             ._incoming
             .take()
             .ok_or_else(|| Error::Peer(format!("message receiver missing")))?;
-
+            
         let self_clone = self.clone();
+        let task = tokio::spawn(async move {
+            println!("handle message task started");
+            // TODO: WHY DOESNT THIS RUN??
+
+            while let Some(message) = incoming_r.recv().await { // runs if commenting out...
+                let mut inner_clone = self_clone.0.lock().await;
+
+                println!("got message from sender: {message:?}");
+
+                match message {
+                    PeerMessage::Choke => inner_clone.peer_choking = true,
+                    PeerMessage::Unchoke => inner_clone.peer_choking = false,
+                    PeerMessage::Interested => inner_clone.peer_interested = true,
+                    PeerMessage::NotInterested => inner_clone.peer_interested = false,
+                    PeerMessage::Have(index) => {
+                        let (byte_index, bit_index) = (index as usize / 8, index % 8);
+                        inner_clone.bitfield[byte_index] |= 128_u8 >> bit_index;
+                    }
+                    PeerMessage::Bitfield(bitfield) => inner_clone.bitfield = bitfield,
+                    PeerMessage::Request(_, _, _) => {
+                        // todo
+                        println!("peer requested!")
+                    },
+                    PeerMessage::Piece(index, begin, piece) => {
+                        sender.send((index, begin, piece))?;
+                    }
+                    PeerMessage::Cancel(_, _, _) => {
+                        // todo
+                        println!("peer cancelled!")
+                    },
+                }
+            }
+
+            Ok(())
+        });
+
         inner
             ._tasks
             .as_mut()
             .unwrap()
-            .push(tokio::spawn(async move {
-                while let Ok(message) = incoming_r.recv() {
-                    let mut inner_clone = self_clone.0.lock().await;
-
-                    println!("{message:?}");
-
-                    match message {
-                        PeerMessage::Choke => inner_clone.peer_choking = true,
-                        PeerMessage::Unchoke => inner_clone.peer_choking = false,
-                        PeerMessage::Interested => inner_clone.peer_interested = true,
-                        PeerMessage::NotInterested => inner_clone.peer_interested = false,
-                        PeerMessage::Have(index) => {
-                            let (byte_index, bit_index) = (index as usize / 8, index % 8);
-                            inner_clone.bitfield[byte_index] |= 128_u8 >> bit_index;
-                        }
-                        PeerMessage::Bitfield(bitfield) => inner_clone.bitfield = bitfield,
-                        PeerMessage::Request(_, _, _) => todo!(),
-                        PeerMessage::Piece(index, begin, piece) => {
-                            sender.send((index, begin, piece))?;
-                        }
-                        PeerMessage::Cancel(_, _, _) => todo!(),
-                    }
-                }
-
-                Ok(())
-            }));
+            .push(task);
 
         Ok(())
     }
