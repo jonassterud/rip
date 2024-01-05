@@ -70,7 +70,7 @@ impl<'a> Decoder<'a> {
             .iter()
             .map(|b| *b as char)
             .collect::<String>();
-        if val.starts_with("0") && val.len() > 1 {
+        if val.starts_with('0') && val.len() > 1 {
             return Err(Error::Bencode(format!(
                 "invalid integer (stopped at \"{val}\")"
             )));

@@ -16,7 +16,7 @@ impl Download for Torrent {
             .sample_iter(&mut rand::thread_rng())
             .take(20)
             .collect::<Vec<u8>>();
-        let tracker_request = Tracker::create_request(&self, agent, &id);
+        let tracker_request = Tracker::create_request(self, agent, &id);
 
         let download_buffer = self.buffer.clone();
         let piece_length = self.info.piece_length;

@@ -31,7 +31,7 @@ pub struct TrackerRequest {
 impl TrackerRequest {
     /// Create a [`TrackerRequest`] from a [`Torrent`] and its [`Agent`].
     pub fn with(torrent: &Torrent, agent: &Agent, id: &[u8]) -> Result<Self, Error> {
-        let file = agent.get_file(&torrent.get_hash())?;
+        let file = agent.get_file(torrent.get_hash())?;
 
         Ok(Self {
             announce: torrent.announce.clone(),

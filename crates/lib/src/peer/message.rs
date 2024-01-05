@@ -24,16 +24,16 @@ pub enum PeerMessage {
 
 impl From<&PeerMessage> for u8 {
     fn from(value: &PeerMessage) -> Self {
-        match value {
-            &PeerMessage::Choke => 0,
-            &PeerMessage::Unchoke => 1,
-            &PeerMessage::Interested => 2,
-            &PeerMessage::NotInterested => 3,
-            &PeerMessage::Have(_) => 4,
-            &PeerMessage::Bitfield(_) => 5,
-            &PeerMessage::Request(_, _, _) => 6,
-            &PeerMessage::Piece(_, _, _) => 7,
-            &PeerMessage::Cancel(_, _, _) => 8,
+        match *value {
+            PeerMessage::Choke => 0,
+            PeerMessage::Unchoke => 1,
+            PeerMessage::Interested => 2,
+            PeerMessage::NotInterested => 3,
+            PeerMessage::Have(_) => 4,
+            PeerMessage::Bitfield(_) => 5,
+            PeerMessage::Request(_, _, _) => 6,
+            PeerMessage::Piece(_, _, _) => 7,
+            PeerMessage::Cancel(_, _, _) => 8,
         }
     }
 }
@@ -97,9 +97,9 @@ impl PeerMessage {
         let variant = contents
             .get(4)
             .ok_or_else(|| Error::Peer(format!("missing message variant")))?;
-        let p1 = helpers::try_from_slice(&contents, 5, &u32::from_be_bytes);
-        let p2 = helpers::try_from_slice(&contents, 9, &u32::from_be_bytes);
-        let p3 = helpers::try_from_slice(&contents, 13, &u32::from_be_bytes);
+        let p1 = helpers::try_from_slice(contents, 5, &u32::from_be_bytes);
+        let p2 = helpers::try_from_slice(contents, 9, &u32::from_be_bytes);
+        let p3 = helpers::try_from_slice(contents, 13, &u32::from_be_bytes);
 
         match (*variant).into() {
             PeerMessage::Choke => Ok(PeerMessage::Choke),

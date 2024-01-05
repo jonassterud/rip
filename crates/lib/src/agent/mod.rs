@@ -24,10 +24,13 @@ impl Agent {
     }
 
     /// Get file with `hash`.
-    pub fn get_file(&self, hash: &[u8]) -> Result<&Box<dyn Download<Error = Error>>, Error> {
-        self.files
+    pub fn get_file(&self, hash: &[u8]) -> Result<&dyn Download<Error = Error>, Error> {
+        let file = self
+            .files
             .get(hash)
-            .ok_or_else(|| Error::Agent(format!("file not found")))
+            .ok_or_else(|| Error::Agent(format!("file not found")))?;
+
+        Ok(file.as_ref())
     }
 
     /// Get IP port.
@@ -60,7 +63,7 @@ impl Agent {
 
     /// Start a download process for all pending files.
     pub async fn download(mut self, out: &Path) -> Result<(), Error> {
-        for (_, file) in &self.files {
+        for file in self.files.values() {
             self.futures.push(file.initiate(&self, out));
         }
 

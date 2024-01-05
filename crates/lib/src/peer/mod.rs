@@ -89,7 +89,7 @@ impl Peer {
 
         // TODO: Fix IPV6.. Maybe I need a 6to4 tunnel (e.g. https://tunnelbroker.net/)...
 
-        if address.0.contains(":") {
+        if address.0.contains(':') {
             return Err(Error::Peer(format!("ipv6 not supported")));
         } else {
             println!("{address:?}")
@@ -99,7 +99,7 @@ impl Peer {
 
         // Create handshake
         let handshake = PeerHandshake::new(hash, id);
-        let mut handshake_bytes = handshake.as_bytes();
+        let handshake_bytes = handshake.as_bytes();
 
         // Create an outgoing task
         let outgoing_stream = inner._stream.clone().unwrap();
@@ -117,16 +117,13 @@ impl Peer {
             .as_mut()
             .unwrap()
             .push(tokio::spawn(async move {
-                outgoing_stream
-                    .lock()
-                    .await
-                    .write_all(&mut handshake_bytes)?;
+                outgoing_stream.lock().await.write_all(&handshake_bytes)?;
 
                 while let Some(message) = outgoing_r.recv().await {
                     outgoing_stream
                         .lock()
                         .await
-                        .write_all(&mut message.as_bytes())?;
+                        .write_all(&message.as_bytes())?;
                 }
 
                 Ok(())
