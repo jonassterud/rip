@@ -27,11 +27,17 @@ impl Download for Torrent {
             for mut peer in tracker_response.peers {
                 if peer.connect(10, &hash, &id).await.is_ok() {
                     let (piece_sender, mut piece_receiver) = tokio_mpsc::unbounded_channel();
-                    peer.handle_messages(piece_sender).await?;
 
-                    let mut peer = peer.clone();
+                    let mut peer_c1 = peer.clone();
                     tasks.push(tokio::spawn(async move {
-                        peer.join().await?;
+                        peer_c1.handle_messages(piece_sender).await?;
+
+                        Ok(())
+                    }));
+
+                    let mut peer_c2 = peer.clone();
+                    tasks.push(tokio::spawn(async move {
+                        peer_c2.join().await?;
 
                         Ok(())
                     }));

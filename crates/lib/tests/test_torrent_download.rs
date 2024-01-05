@@ -1,6 +1,6 @@
 use rip_lib::prelude::*;
 
-#[tokio::test]
+#[tokio::test(flavor = "multi_thread", worker_threads = 4)]
 #[ignore = "avoid spam"]
 async fn test_torrent_download() {
     let this_dir = std::env::current_dir().unwrap().join("./tests");
