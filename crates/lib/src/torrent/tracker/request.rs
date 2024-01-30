@@ -1,8 +1,7 @@
-use core::panic;
-
 use super::TrackerResponse;
 use crate::error::Error;
 use crate::prelude::*;
+use rand::Rng;
 
 /// Tracker GET request.
 #[derive(Debug)]
@@ -52,12 +51,11 @@ impl TrackerRequest {
 
     /// Send [`TrackerRequest`] and wait for [`TrackerResponse`].
     pub async fn send(&self) -> Result<TrackerResponse, Error> {
-        #[cfg(not(feature = "bep_15"))]
-        if self.announce.starts_with("udp") {
-            panic!("UDP tracker feature is not activated (\"bep_15\").");
-        }
-
         let bytes = if self.announce.starts_with("udp") {
+            #[cfg(not(feature = "bep_15"))]
+            panic!("UDP tracker feature is not activated (\"bep_15\").");
+
+            #[cfg(feature = "bep_15")]
             todo!("bep_15")
         } else {  
             let final_url = format!(
@@ -75,6 +73,20 @@ impl TrackerRequest {
         };
 
         TrackerResponse::from_bcode(&bytes, self._bitfield_length).await
+    }
 
+    /// Create connect request packet.
+    #[cfg(feature = "bep_15")]
+    fn udp_connect_request_packet(&self) -> Vec<u8> {
+        let mut out = Vec::with_capacity(16);
+        let mut protocol_id = 41727101980_u64.to_be_bytes().to_vec();
+        let mut action = 0_u32.to_be_bytes().to_vec();
+        let mut transaction_id = rand::thread_rng().gen_range(u32::MIN..u32::MAX).to_be_bytes().to_vec();
+
+        out.append(&mut protocol_id);
+        out.append(&mut action);
+        out.append(&mut transaction_id);
+
+        return out;
     }
 }
