@@ -7,11 +7,13 @@ use futures::future::try_join_all;
 pub use handshake::PeerHandshake;
 pub use message::PeerMessage;
 use std::io::{Read, Write};
-use std::net::TcpStream;
+use std::str::FromStr;
 use std::sync::Arc;
 use tokio::sync::mpsc;
 use tokio::sync::Mutex;
 use tokio::task::JoinHandle;
+use std::net::{TcpStream, SocketAddr, IpAddr};
+use socket2::{Socket, Domain, Type, Protocol};
 
 #[derive(Debug, Clone)]
 pub struct Peer(pub Arc<Mutex<InnerPeer>>);
@@ -22,7 +24,7 @@ pub struct InnerPeer {
     /// Peer ID.
     id: Vec<u8>,
     /// IP address.
-    ip: Vec<u8>,
+    pub ip: Vec<u8>,
     /// IP port.
     port: u16,
 
@@ -35,7 +37,7 @@ pub struct InnerPeer {
     /// Outgoing and incoming connection tasks (should be safe to unwrap).
     _tasks: Option<Vec<JoinHandle<Result<(), Error>>>>,
     /// TCP stream.
-    _stream: Option<Arc<Mutex<TcpStream>>>,
+    _stream: Option<Arc<Mutex<Socket>>>,
     /// Outgoing message sender.
     _outgoing: Option<mpsc::UnboundedSender<PeerMessage>>,
     /// Incoming message receiver.
@@ -77,25 +79,34 @@ impl Peer {
         let mut inner = self.0.lock().await;
 
         // Connect and initialize a stream
-        let address = (
-            inner
-                .ip
-                .iter()
-                .cloned()
-                .map(|b| b as char)
-                .collect::<String>(),
-            inner.port,
-        );
+        let ip = inner
+            .ip
+            .iter()
+            .cloned()
+            .map(|b| b as char)
+            .collect::<String>();
 
-        // TODO: Fix IPV6.. Maybe I need a 6to4 tunnel (e.g. https://tunnelbroker.net/)...
-
-        if address.0.contains(':') {
-            return Err(Error::Peer(format!("ipv6 not supported")));
+        let domain = if ip.contains(':') {
+            Domain::IPV6
         } else {
-            println!("{address:?}")
-        }
+            Domain::IPV4
+        };
 
-        inner._stream = Some(Arc::new(Mutex::new(TcpStream::connect(address)?)));
+        println!("Before: {:?}", SocketAddr::new(IpAddr::from_str(&ip).unwrap(), inner.port));
+
+        let socket = Socket::new(domain, Type::STREAM, Some(Protocol::TCP));
+
+        //println!("{socket:?}");
+        let socket = socket?;
+        let address: SocketAddr = SocketAddr::new(IpAddr::from_str(&ip).unwrap(), inner.port);
+        let t = socket.connect(&address.into());
+
+        //println!("Trying: {address:?}");
+        println!("{t:?}");
+
+        inner._stream = Some(Arc::new(Mutex::new(socket)));
+
+        println!("Connecting to: {:?}::{:?}", ip, inner.port);
 
         // Create handshake
         let handshake = PeerHandshake::new(hash, id);
@@ -104,13 +115,7 @@ impl Peer {
         // Create an outgoing task
         let outgoing_stream = inner._stream.clone().unwrap();
         let (outgoing_s, mut outgoing_r) = mpsc::unbounded_channel::<PeerMessage>();
-
-        // TODO: temp start
-        outgoing_s.send(PeerMessage::Interested)?;
-        outgoing_s.send(PeerMessage::Unchoke)?;
-        // TODO: temp end
-
-        inner._outgoing = Some(outgoing_s);
+        inner._outgoing = Some(outgoing_s.clone());
 
         inner
             ._tasks
@@ -120,14 +125,22 @@ impl Peer {
                 outgoing_stream.lock().await.write_all(&handshake_bytes)?;
 
                 while let Some(message) = outgoing_r.recv().await {
+                    println!("Sending: {message:?}");
+
                     outgoing_stream
                         .lock()
                         .await
-                        .write_all(&message.as_bytes())?;
+                        .send(&message.as_bytes())?;
                 }
 
                 Ok(())
             }));
+
+        // TODO: temp start
+        println!("sending interested and unchoke...");
+        outgoing_s.send(PeerMessage::Interested)?;
+        outgoing_s.send(PeerMessage::Unchoke)?;
+        // TODO: temp end
 
         // Create an incoming task
         let incoming_stream = inner._stream.clone().unwrap();
@@ -147,6 +160,8 @@ impl Peer {
                         .read_exact(&mut handshake_buffer)?;
                     handshake.verify(&handshake_buffer)?;
                 }
+
+                println!("handshaked!");
 
                 loop {
                     let mut incoming_stream = incoming_stream.lock().await;

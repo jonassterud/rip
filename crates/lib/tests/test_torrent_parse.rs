@@ -4,7 +4,8 @@ use rip_lib::prelude::*;
 fn test_torrent_parse() {
     let path = std::env::current_dir()
         .unwrap()
-        .join("./tests/torrents/ubuntu-23.04-desktop-amd64.iso.torrent");
+        .join("./tests/torrents/big-buck-bunny.torrent");
     let contents = std::fs::read(path).unwrap();
     let torrent = Torrent::from_bcode(&contents).unwrap();
+    println!("{torrent:?}");
 }

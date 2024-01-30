@@ -8,7 +8,7 @@ edition.workspace = true
 rust-version.workspace = true
 
 [features]
-default = ["bep_23"]
+default = ["bep_15", "bep_23"]
 bep_15 = []
 bep_23 = []
 
@@ -20,3 +20,4 @@ thiserror = { version = "1.0", features = [] }
 sha1_smol = { version = "1.0", features = [] }
 rand = { version = "0.8", features = [] }
 urlencoding = { version = "2.1", features = [] }
+socket2 = { version = "0.5.5", features = [] }

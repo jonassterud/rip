@@ -1,3 +1,5 @@
+use core::panic;
+
 use super::TrackerResponse;
 use crate::error::Error;
 use crate::prelude::*;
@@ -50,19 +52,29 @@ impl TrackerRequest {
 
     /// Send [`TrackerRequest`] and wait for [`TrackerResponse`].
     pub async fn send(&self) -> Result<TrackerResponse, Error> {
-        let final_url = format!(
-            "{}?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}",
-            self.announce,
-            urlencoding::encode_binary(&self.info_hash),
-            urlencoding::encode(&self.peer_id),
-            urlencoding::encode(&self.port.to_string()),
-            urlencoding::encode(&self.uploaded.to_string()),
-            urlencoding::encode(&self.downloaded.to_string()),
-            urlencoding::encode(&self.left.to_string()),
-            //urlencoding::encode(self.event.as_ref().unwrap_or(&"".to_string())),
-        );
-        let bytes = reqwest::get(final_url).await?.bytes().await?.to_vec();
+        #[cfg(not(feature = "bep_15"))]
+        if self.announce.starts_with("udp") {
+            panic!("UDP tracker feature is not activated (\"bep_15\").");
+        }
 
-        TrackerResponse::from_bcode(&bytes, self._bitfield_length)
+        let bytes = if self.announce.starts_with("udp") {
+            todo!("bep_15")
+        } else {  
+            let final_url = format!(
+                "{}?info_hash={}&peer_id={}&port={}&uploaded={}&downloaded={}&left={}",
+                self.announce,
+                urlencoding::encode_binary(&self.info_hash),
+                urlencoding::encode(&self.peer_id),
+                urlencoding::encode(&self.port.to_string()),
+                urlencoding::encode(&self.uploaded.to_string()),
+                urlencoding::encode(&self.downloaded.to_string()),
+                urlencoding::encode(&self.left.to_string()),
+                //urlencoding::encode(self.event.as_ref().unwrap_or(&"".to_string())),
+            );
+            reqwest::get(final_url).await?.bytes().await?.to_vec()
+        };
+
+        TrackerResponse::from_bcode(&bytes, self._bitfield_length).await
+
     }
 }

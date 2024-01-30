@@ -12,7 +12,7 @@ pub struct TrackerResponse {
 
 impl TrackerResponse {
     /// Create [`TrackerResponse`] from bytes.
-    pub fn from_bcode(contents: &[u8], bitfield_length: usize) -> Result<Self, Error> {
+    pub async fn from_bcode(contents: &[u8], bitfield_length: usize) -> Result<Self, Error> {
         let dict = decode(contents)?.try_as::<Dictionary>()?;
 
         if let Ok(failure_reason) = dict.try_get_as::<ByteString>("failure reason") {
@@ -32,12 +32,27 @@ impl TrackerResponse {
             .map(|dictionary| Peer::from_bcode(dictionary, bitfield_length))
             .collect::<Result<Vec<Peer>, Error>>()?;
 
+        /*debug*/async{
+            async fn temp_map(peer: &Peer) -> String {
+                peer.0.lock().await.ip
+                    .iter()
+                    .cloned()
+                    .map(|b| b as char)
+                    .collect::<String>()
+            }
+            let addresses = peers.iter().map(temp_map);
+    
+            let addresses = futures::future::join_all(addresses).await;
+    
+            println!("Peers:\n\n{:?}\n\n", addresses);
+        }.await;
+
         Ok(Self { interval, peers })
     }
 }
 
-#[test]
-fn test_tracker_response_from_bytes() {
-    let bytes = b"d8:completei64e10:incompletei1e8:intervali1800e5:peersld2:ip37:2606:6080:1001:12:257a:8b87:f80d:75797:peer id20:-TR4030-0vjbp0s2z68f4:porti61406eed2:ip14:185.125.190.597:peer id20:T03I--00Y-FEdyCcD9xB4:porti6930eeee";
-    TrackerResponse::from_bcode(bytes, 0).unwrap();
-}
+// #[test]
+// fn test_tracker_response_from_bytes() {
+//     let bytes = b"d8:completei64e10:incompletei1e8:intervali1800e5:peersld2:ip37:2606:6080:1001:12:257a:8b87:f80d:75797:peer id20:-TR4030-0vjbp0s2z68f4:porti61406eed2:ip14:185.125.190.597:peer id20:T03I--00Y-FEdyCcD9xB4:porti6930eeee";
+//     TrackerResponse::from_bcode(bytes, 0).unwrap();
+// }

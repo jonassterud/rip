@@ -4,7 +4,7 @@ use rip_lib::prelude::*;
 #[ignore = "avoid spam"]
 async fn test_torrent_download() {
     let this_dir = std::env::current_dir().unwrap().join("./tests");
-    let torrent_path = this_dir.join("./torrents/ubuntu-22.04.3-desktop-amd64.iso.torrent");
+    let torrent_path = this_dir.join("./torrents/cosmos-laundromat.torrent");
     let out_path = this_dir.join("./torrents");
 
     let mut agent = Agent::new().unwrap();
